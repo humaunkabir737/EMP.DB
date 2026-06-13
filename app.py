@@ -11,7 +11,35 @@ import base64
 from PIL import Image
 
 st.set_page_config(page_title="M/S Jabed Enterprise", layout="wide", initial_sidebar_state="expanded")
+# ==============================================================================
+# লগইন সিস্টেম (সুরক্ষার জন্য)
+# ==============================================================================
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
 
+if not st.session_state.logged_in:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 1.5, 1]) # ফর্মটি মাঝখানে দেখানোর জন্য
+    with col2:
+        st.markdown("<h3 style='text-align: center; color: #10b981;'>🔐 M/S JABED ENTERPRISE</h3>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #a0a0a0; text-align: center;'>দয়া করে সঠিক ইউজারনেম ও পাসওয়ার্ড দিয়ে লগইন করুন।</p>", unsafe_allow_html=True)
+        
+        with st.form("login_form"):
+            username = st.text_input("ইউজারনেম (Username)")
+            password = st.text_input("পাসওয়ার্ড (Password)", type="password")
+            login_button = st.form_submit_button("লগইন করুন", use_container_width=True)
+            
+            if login_button:
+                # 💡 নিচে আপনি আপনার পছন্দমতো ইউজারনেম এবং পাসওয়ার্ড বদলে নিতে পারেন
+                if username == "admin" and password == "jabed2026":
+                    st.session_state.logged_in = True
+                    st.success("লগইন সফল হয়েছে!")
+                    import time
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error("ভুল ইউজারনেম অথবা পাসওয়ার্ড! আবার চেষ্টা করুন।")
+    st.stop() # লগইন না করা পর্যন্ত নিচের কোনো কোড বা মেনু স্ক্রিনে আসবে না
 # ==============================================================================
 # ২. ডাইনামিক পাথ ও ফোল্ডার সেটআপ
 # ==============================================================================
@@ -376,6 +404,9 @@ def show_employee_details(emp_id, company):
 # ৭. সাইডবার ন্যাভিগেশন মেনু
 # ==============================================================================
 st.sidebar.title("Main Menu")
+if st.sidebar.button("🔒 লগআউট (Logout)", use_container_width=True):
+    st.session_state.logged_in = False
+    st.rerun()
 menu_options = ["Add New Employee", "Add Employee By Upload", "View All Employee"]
 
 with st.sidebar.expander("📁 Employee Management", expanded=False):
