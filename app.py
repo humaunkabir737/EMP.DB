@@ -84,7 +84,7 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    cursor.execute('''
+cursor.execute('''
         CREATE TABLE IF NOT EXISTS employees (
             emp_id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -105,6 +105,14 @@ def init_db():
             guarantor_mobile TEXT
         )
     ''')
+# Second Party Table
+    cursor.execute('''CREATE TABLE IF NOT EXISTS second_parties (id INTEGER PRIMARY KEY AUTOINCREMENT, party_name TEXT UNIQUE NOT NULL, contact_number TEXT, comments_01 TEXT, comments_02 TEXT)''')
+    
+    # Default Parties Insert
+    default_parties = ["Mother_Wallet", "Hand_Cash", "Petty_Cash", "Bank", "BGP", "Dulal", "Shafayat", "Madina", "Owner", "GAS", "Auto_Rice", "Others", "bKash", "Commission", "Al_Arafa", "Rekit", "DMCBL", "Kabita_Mami", "Ashim_Da", "Al_Amin"]
+    for party in default_parties:
+        cursor.execute("INSERT OR IGNORE INTO second_parties (party_name, contact_number, comments_01, comments_02) VALUES (?, '', '', '')", (party,))
+    conn.commit()
     
     cursor.execute("PRAGMA table_info(employees)")
     existing_columns = [col[1] for col in cursor.fetchall()]
