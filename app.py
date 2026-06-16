@@ -423,10 +423,12 @@ def show_employee_details(emp_id, company):
 # ৭. সাইডবার ন্যাভিগেশন মেনু
 # ==============================================================================
 st.sidebar.markdown("## Main Menu")
-st.sidebar.markdown("### স্বাগতম, <span style='color:#10b981;'>admin</span> 👋", unsafe_allow_html=True)
+# হার্ডকোড করা 'admin' এর বদলে ডায়নামিক সেশন রোল যুক্ত করা হলো
+st.sidebar.markdown(f"### স্বাগতম, <span style='color:#10b981;'>{st.session_state.user_role}</span> 👋", unsafe_allow_html=True)
 
 if st.sidebar.button("🔒 লগআউট (Logout)", use_container_width=True):
     st.session_state.logged_in = False
+    st.session_state.user_role = None # লগআউটের সময় রোল মুছে ফেলা হলো
     st.rerun()
 
 st.sidebar.markdown("<hr style='margin: 10px 0px; border-color: #444;'>", unsafe_allow_html=True)
@@ -437,92 +439,122 @@ menu_options_emp = ["Add New Employee", "Add Employee By Upload", "View All Empl
 # ১. 📁 bKash Main Folder
 # ---------------------------------------------------------
 with st.sidebar.expander("📁 bKash", expanded=False):
-    
-    # সাব-ফোল্ডার: Employee Management
-    with st.expander("📁 Employee Management", expanded=False):
-        bk_default = menu_options_emp.index(st.session_state.current_action) if (st.session_state.current_company == "bKash" and st.session_state.current_action in menu_options_emp) else None
-        
-        def bkash_emp_cb():
-            st.session_state.current_company = "bKash"
-            st.session_state.current_action = st.session_state.bkash_emp_radio
-            st.session_state.active_emp_id = None
-        
-        st.radio("bKash Emp Options", options=menu_options_emp, index=bk_default, key="bkash_emp_radio", on_change=bkash_emp_cb, label_visibility="collapsed")
-    
-    # সাব-ফোল্ডার: Sales Management
-    with st.expander("📁 Sales Management", expanded=False):
-        st.caption("Sales features coming soon...")
-        
-    # সাব-ফোল্ডার: Accounts Management
-    with st.expander("📁 Accounts Management", expanded=False):
-        if st.button("💵 Cash Management", key="bk_cash", use_container_width=True):
-            st.session_state.current_company = "bKash"
-            st.session_state.current_action = "Cash Management"
-            st.rerun()
-        if st.button("📉 Expense Management", key="bk_exp", use_container_width=True):
-            st.session_state.current_company = "bKash"
-            st.session_state.current_action = "Expense Management"
-            st.rerun()
+    # লজিক যুক্ত: শুধুমাত্র admin এবং bKash_User এই ফোল্ডারের ভেতর দেখতে পারবে
+    if st.session_state.user_role in ["admin", "bKash_User"]:
+        # সাব-ফোল্ডার: Employee Management
+        with st.expander("📁 Employee Management", expanded=False):
+            bk_default = menu_options_emp.index(st.session_state.current_action) if (st.session_state.current_company == "bKash" and st.session_state.current_action in menu_options_emp) else None
             
-    # সাব-ফোল্ডার: Others
-    with st.expander("📁 Others", expanded=False):
-        if st.button("📁 Others Account", key="bk_oth", use_container_width=True):
-            st.session_state.current_company = "bKash"
-            st.session_state.current_action = "Others"
-            st.rerun()
+            def bkash_emp_cb():
+                st.session_state.current_company = "bKash"
+                st.session_state.current_action = st.session_state.bkash_emp_radio
+                st.session_state.active_emp_id = None
+            
+            st.radio("bKash Emp Options", options=menu_options_emp, index=bk_default, key="bkash_emp_radio", on_change=bkash_emp_cb, label_visibility="collapsed")
+        
+        # সাব-ফোল্ডার: Sales Management
+        with st.expander("📁 Sales Management", expanded=False):
+            st.caption("Sales features coming soon...")
+            
+        # সাব-ফোল্ডার: Accounts Management
+        with st.expander("📁 Accounts Management", expanded=False):
+            if st.button("💵 Cash Management", key="bk_cash", use_container_width=True):
+                st.session_state.current_company = "bKash"
+                st.session_state.current_action = "Cash Management"
+                st.rerun()
+            if st.button("📉 Expense Management", key="bk_exp", use_container_width=True):
+                st.session_state.current_company = "bKash"
+                st.session_state.current_action = "Expense Management"
+                st.rerun()
+                
+        # সাব-ফোল্ডার: Others
+        with st.expander("📁 Others", expanded=False):
+            if st.button("📁 Others Account", key="bk_oth", use_container_width=True):
+                st.session_state.current_company = "bKash"
+                st.session_state.current_action = "Others"
+                st.rerun()
+    else:
+        # পদ্ধতি ক: অ্যাক্সেস লকড মেসেজ
+        st.markdown("<p style='color: #ef4444; font-weight: bold; margin-bottom: 0;'>🔒 অ্যাক্সেস লকড</p><p style='color: #a0a0a0; font-size: 13px;'>আপনার এই ফোল্ডারে কাজ করার অনুমতি নেই।</p>", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # ২. 📁 GP Main Folder
 # ---------------------------------------------------------
 with st.sidebar.expander("📁 GP", expanded=False):
-    
-    # সাব-ফোল্ডার: Employee Management
-    with st.expander("📁 Employee Management", expanded=False):
-        gp_default = menu_options_emp.index(st.session_state.current_action) if (st.session_state.current_company == "GP" and st.session_state.current_action in menu_options_emp) else None
-        
-        def gp_emp_cb():
-            st.session_state.current_company = "GP"
-            st.session_state.current_action = st.session_state.gp_emp_radio
-            st.session_state.active_emp_id = None
+    # লজিক যুক্ত: শুধুমাত্র admin এবং GP_User এই ফোল্ডারের ভেতর দেখতে পারবে
+    if st.session_state.user_role in ["admin", "GP_User"]:
+        # সাব-ফোল্ডার: Employee Management
+        with st.expander("📁 Employee Management", expanded=False):
+            gp_default = menu_options_emp.index(st.session_state.current_action) if (st.session_state.current_company == "GP" and st.session_state.current_action in menu_options_emp) else None
             
-        st.radio("GP Emp Options", options=menu_options_emp, index=gp_default, key="gp_emp_radio", on_change=gp_emp_cb, label_visibility="collapsed")
-    
-    # সাব-ফোল্ডার: Sales Management
-    with st.expander("📁 Sales Management", expanded=False):
-        st.caption("Sales features coming soon...")
+            def gp_emp_cb():
+                st.session_state.current_company = "GP"
+                st.session_state.current_action = st.session_state.gp_emp_radio
+                st.session_state.active_emp_id = None
+                
+            st.radio("GP Emp Options", options=menu_options_emp, index=gp_default, key="gp_emp_radio", on_change=gp_emp_cb, label_visibility="collapsed")
         
-    # সাব-ফোল্ডার: Accounts Management
-    with st.expander("📁 Accounts Management", expanded=False):
-        if st.button("💵 Cash Management", key="gp_cash", use_container_width=True):
-            st.session_state.current_company = "GP"
-            st.session_state.current_action = "Cash Management"
-            st.rerun()
-        if st.button("📉 Expense Management", key="gp_exp", use_container_width=True):
-            st.session_state.current_company = "GP"
-            st.session_state.current_action = "Expense Management"
-            st.rerun()
+        # সাব-ফোল্ডার: Sales Management
+        with st.expander("📁 Sales Management", expanded=False):
+            st.caption("Sales features coming soon...")
             
-    # সাব-ফোল্ডার: Others
-    with st.expander("📁 Others", expanded=False):
-        if st.button("📁 Others Account", key="gp_oth", use_container_width=True):
-            st.session_state.current_company = "GP"
-            st.session_state.current_action = "Others"
-            st.rerun()
+        # সাব-ফোল্ডার: Accounts Management
+        with st.expander("📁 Accounts Management", expanded=False):
+            if st.button("💵 Cash Management", key="gp_cash", use_container_width=True):
+                st.session_state.current_company = "GP"
+                st.session_state.current_action = "Cash Management"
+                st.rerun()
+            if st.button("📉 Expense Management", key="gp_exp", use_container_width=True):
+                st.session_state.current_company = "GP"
+                st.session_state.current_action = "Expense Management"
+                st.rerun()
+                
+        # সাব-ফোল্ডার: Others
+        with st.expander("📁 Others", expanded=False):
+            if st.button("📁 Others Account", key="gp_oth", use_container_width=True):
+                st.session_state.current_company = "GP"
+                st.session_state.current_action = "Others"
+                st.rerun()
+    else:
+        # পদ্ধতি ক: অ্যাক্সেস লকড মেসেজ
+        st.markdown("<p style='color: #ef4444; font-weight: bold; margin-bottom: 0;'>🔒 অ্যাক্সেস লকড</p><p style='color: #a0a0a0; font-size: 13px;'>আপনার এই ফোল্ডারে কাজ করার অনুমতি নেই।</p>", unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 
 # ---------------------------------------------------------
 # ৩. ⚙️ পাসওয়ার্ড রিসেট প্যানেল (Admin)
 # ---------------------------------------------------------
-with st.sidebar.expander("⚙️ পাসওয়ার্ড রিসেট প্যানেল (Admin)", expanded=False):
-    st.markdown("<small style='font-weight:bold;'>ইউজার সিলেক্ট করুন</small>", unsafe_allow_html=True)
-    st.selectbox("Select User", ["admin", "manager"], label_visibility="collapsed", key="admin_user_select")
-    
-    st.markdown("<small style='font-weight:bold;'>নতুন পাসওয়ার্ড লিখুন</small>", unsafe_allow_html=True)
-    st.text_input("New Password", type="password", label_visibility="collapsed", key="admin_new_pass")
-    
-    if st.button("📱 OTP পাঠান (সিমুলেশন)", use_container_width=True, key="admin_otp_btn"):
-        st.success("OTP পাঠানো হয়েছে!")
+# লজিক যুক্ত: শুধুমাত্র admin হলে এই প্যানেলটি সাইডবারে শো করবে, অন্যথায় হাইড থাকবে
+if st.session_state.user_role == "admin":
+    with st.sidebar.expander("⚙️ পাসওয়ার্ড রিসেট প্যানেল (Admin)", expanded=False):
+        st.markdown("<small style='font-weight:bold;'>ইউজার সিলেক্ট করুন</small>", unsafe_allow_html=True)
+        target_user = st.selectbox("Select User", list(st.session_state.credentials.keys()), label_visibility="collapsed", key="admin_user_select")
+        
+        st.markdown("<small style='font-weight:bold;'>নতুন পাসওয়ার্ড লিখুন</small>", unsafe_allow_html=True)
+        new_password = st.text_input("New Password", type="password", label_visibility="collapsed", key="admin_new_pass")
+        
+        if st.button("📱 OTP পাঠান (সিমুলেশন)", use_container_width=True, key="admin_otp_btn"):
+            import random
+            st.session_state.generated_otp = str(random.randint(1000, 9999))
+            st.toast(f"🔑 [Admin OTP]: {st.session_state.generated_otp} (অ্যাডমিনের ফোনে পাঠানো হলো)", icon="💬")
+        
+        if 'generated_otp' in st.session_state:
+            st.info(f"💡 টেস্ট ওটিপি কোড: **{st.session_state.generated_otp}**")
+            entered_otp = st.text_input("৪ ডিজিটের OTP কোডটি দিন", key="admin_otp_field")
+            
+            if st.button("💾 পাসওয়ার্ড পরিবর্তন নিশ্চিত করুন", use_container_width=True, key="admin_confirm_pwd_change"):
+                if entered_otp == st.session_state.generated_otp:
+                    if new_password:
+                        st.session_state.credentials[target_user] = new_password
+                        st.success(f"✅ {target_user}-এর পাসওয়ার্ড পরিবর্তন সফল!")
+                        del st.session_state.generated_otp
+                        import time
+                        time.sleep(0.8)
+                        st.rerun()
+                    else:
+                        st.error("পাসওয়ার্ডের ঘরটি খালি রাখা যাবে না!")
+                else:
+                    st.error("ভুল OTP কোড! আবার চেষ্টা করুন।")
 
 current_company = st.session_state.current_company
 current_action = st.session_state.current_action
