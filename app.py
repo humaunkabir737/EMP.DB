@@ -84,6 +84,7 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
+    # এমপ্লয়ি টেবিল তৈরি
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS employees (
             emp_id TEXT PRIMARY KEY,
@@ -105,7 +106,9 @@ def init_db():
             guarantor_mobile TEXT
         )
     ''')
-        cursor.execute('''CREATE TABLE IF NOT EXISTS second_parties (
+    
+    # সেকেন্ড পার্টি টেবিল তৈরি (ইন্ডেন্টেশন ঠিক করা হয়েছে)
+    cursor.execute('''CREATE TABLE IF NOT EXISTS second_parties (
         id INTEGER PRIMARY KEY AUTOINCREMENT, 
         party_name TEXT UNIQUE NOT NULL, 
         contact_number TEXT, 
@@ -117,6 +120,8 @@ def init_db():
     for party in default_parties:
         cursor.execute("INSERT OR IGNORE INTO second_parties (party_name, contact_number, comments_01, comments_02) VALUES (?, '', '', '')", (party,))
     conn.commit()
+    
+    # মাইগ্রেশন লজিক
     cursor.execute("PRAGMA table_info(employees)")
     existing_columns = [col[1] for col in cursor.fetchall()]
     
@@ -139,7 +144,6 @@ def init_db():
     conn.close()
 
 init_db()
-
 # ==============================================================================
 # ৪. গ্লোবাল সেশন স্টেট এবং কলব্যাক ফাংশন
 # ==============================================================================
