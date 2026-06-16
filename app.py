@@ -423,21 +423,63 @@ def show_employee_details(emp_id, company):
 # ৭. সাইডবার ন্যাভিগেশন মেনু
 # ==============================================================================
 st.sidebar.title("Main Menu")
+st.sidebar.markdown(f"**স্বাগতম,** `{st.session_state.user_role}` 👋")
+
 if st.sidebar.button("🔒 লগআউট (Logout)", use_container_width=True):
     st.session_state.logged_in = False
+    st.session_state.user_role = None
     st.rerun()
+
 menu_options = ["Add New Employee", "Add Employee By Upload", "View All Employee"]
 
-with st.sidebar.expander("📁 Employee Management", expanded=False):
+with st.sidebar.expander("📁 Employee Management", expanded=True):
     st.markdown("<small style='color:#888;'>Employee Actions:</small>", unsafe_allow_html=True)
     
-    with st.expander("📁 bKash Employee", expanded=False):
-        bkash_default = menu_options.index(st.session_state.current_action) if (st.session_state.current_company == "bKash" and st.session_state.current_action in menu_options) else None
-        st.radio("bKash Options", options=menu_options, index=bkash_default, key="bkash_radio", on_change=on_bkash_change, label_visibility="collapsed")
+    # 📁 bKash ফোল্ডার সেকশন
+    with st.expander("📁 bKash", expanded=(st.session_state.current_company == "bKash")):
+        if st.session_state.user_role in ["admin", "bKash_User"]:
+            bkash_default = menu_options.index(st.session_state.current_action) if (st.session_state.current_company == "bKash" and st.session_state.current_action in menu_options) else None
+            st.radio("bKash Options", options=menu_options, index=bkash_default, key="bkash_radio", on_change=on_bkash_change, label_visibility="collapsed")
+        else:
+            # পদ্ধতি ক: ইনঅ্যাক্টিভ বা রেসপন্স না করা (অ্যাক্সেস লক মেসেজ)
+            st.markdown("<p style='color: #ef4444; font-weight: bold; margin-bottom: 0;'>🔒 অ্যাক্সেস লকড</p><p style='color: #a0a0a0; font-size: 13px;'>আপনার এই সেকশনে কাজ করার অনুমতি নেই।</p>", unsafe_allow_html=True)
     
-    with st.expander("📁 GP Employee", expanded=False):
-        gp_default = menu_options.index(st.session_state.current_action) if (st.session_state.current_company == "GP" and st.session_state.current_action in menu_options) else None
-        st.radio("GP Options", options=menu_options, index=gp_default, key="gp_radio", on_change=on_gp_change, label_visibility="collapsed")
+    # 📁 GP ফোল্ডার সেকশন
+    with st.expander("📁 GP", expanded=(st.session_state.current_company == "GP")):
+        if st.session_state.user_role in ["admin", "GP_User"]:
+            gp_default = menu_options.index(st.session_state.current_action) if (st.session_state.current_company == "GP" and st.session_state.current_action in menu_options) else None
+            st.radio("GP Options", options=menu_options, index=gp_default, key="gp_radio", on_change=on_gp_change, label_visibility="collapsed")
+        else:
+            # পদ্ধতি ক: ইনঅ্যাক্টিভ বা রেসপন্স না করা (অ্যাক্সেস লক মেসেজ)
+            st.markdown("<p style='color: #ef4444; font-weight: bold; margin-bottom: 0;'>🔒 অ্যাক্সেস লকড</p><p style='color: #a0a0a0; font-size: 13px;'>আপনার এই সেকশনে কাজ করার অনুমতি নেই।</p>", unsafe_allow_html=True)
+
+# 🔐 শুধুমাত্র "admin"-এর জন্য ওটিপিসহ পাসওয়ার্ড পরিবর্তন প্যানেল
+if st.session_state.user_role == "admin":
+    st.sidebar.markdown("---")
+    with st.sidebar.expander("⚙️ পাসওয়ার্ড রিসেট প্যানেল (Admin)", expanded=False):
+        target_user = st.selectbox("ইউজার সিলেক্ট করুন", list(st.session_state.credentials.keys()))
+        new_password = st.text_input("নতুন পাসওয়ার্ড লিখুন", type="password", key="admin_new_pwd")
+        
+        if st.sidebar.button("📱 OTP পাঠান (সিমুলেশন)", use_container_width=True):
+            import random
+            st.session_state.generated_otp = str(random.randint(1000, 9999))
+            st.toast(f"🔑 [Admin OTP]: {st.session_state.generated_otp} (অ্যাডমিনের ফোনে পাঠানো হলো)", icon="💬")
+        
+        if 'generated_otp' in st.session_state:
+            st.info(f"💡 টেস্ট ওটিপি কোড: **{st.session_state.generated_otp}**")
+            entered_otp = st.text_input("৪ ডিজিটের OTP কোডটি দিন", key="admin_otp_field")
+            
+            if st.sidebar.button("💾 পাসওয়ার্ড পরিবর্তন নিশ্চিত করুন", use_container_width=True):
+                if entered_otp == st.session_state.generated_otp:
+                    if new_password:
+                        st.session_state.credentials[target_user] = new_password
+                        st.sidebar.success(f"✅ {target_user}-এর পাসওয়ার্ড পরিবর্তন সফল!")
+                        del st.session_state.generated_otp
+                        st.rerun()
+                    else:
+                        st.sidebar.error("পাসওয়ার্ডের ঘরটি খালি রাখা যাবে না!")
+                else:
+                    st.sidebar.error("ভুল OTP কোড! আবার চেষ্টা করুন।")
 
 st.sidebar.markdown("---")
 with st.sidebar.expander("💰 Sales Management", expanded=False):
