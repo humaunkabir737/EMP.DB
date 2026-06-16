@@ -105,7 +105,18 @@ def init_db():
             guarantor_mobile TEXT
         )
     ''')
+        cursor.execute('''CREATE TABLE IF NOT EXISTS second_parties (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        party_name TEXT UNIQUE NOT NULL, 
+        contact_number TEXT, 
+        comments_01 TEXT, 
+        comments_02 TEXT
+    )''')
     
+    default_parties = ["Mother_Wallet", "Hand_Cash", "Petty_Cash", "Bank", "BGP", "Dulal", "Shafayat", "Madina", "Owner", "GAS", "Auto_Rice", "Others", "bKash", "Commission", "Al_Arafa", "Rekit", "DMCBL", "Kabita_Mami", "Ashim_Da", "Al_Amin"]
+    for party in default_parties:
+        cursor.execute("INSERT OR IGNORE INTO second_parties (party_name, contact_number, comments_01, comments_02) VALUES (?, '', '', '')", (party,))
+    conn.commit()
     cursor.execute("PRAGMA table_info(employees)")
     existing_columns = [col[1] for col in cursor.fetchall()]
     
@@ -434,7 +445,21 @@ if st.sidebar.button("🔒 লগআউট (Logout)", use_container_width=True):
 st.sidebar.markdown("<hr style='margin: 10px 0px; border-color: #444;'>", unsafe_allow_html=True)
 
 menu_options_emp = ["Add New Employee", "Add Employee By Upload", "View All Employee"]
+# Second Party Management Menu
+menu_options_sp = ["Add New Second Party", "View All Second Parties"]
 
+# --- সাইডবার মেনু ---
+st.sidebar.markdown("### Employee Management")
+st.session_state.current_action = st.sidebar.radio("Select Option", menu_options_emp, label_visibility="collapsed")
+
+st.sidebar.markdown("### Second Party Management")
+sp_action = st.sidebar.radio("Select Party Option", menu_options_sp, label_visibility="collapsed")
+
+# যদি Second Party অপশন সিলেক্ট করা হয়, তবে সেটি current_action এ সেট হবে
+if sp_action == "Add New Second Party":
+    st.session_state.current_action = "Add New"
+elif sp_action == "View All Second Parties":
+    st.session_state.current_action = "View All"
 # ---------------------------------------------------------
 # ১. 📁 bKash Main Folder
 # ---------------------------------------------------------
@@ -762,20 +787,48 @@ elif current_action == "View All Employee":
 # =========================================================
 # অ্যাকাউন্ট ম্যানেজমেন্টের সাব-পেজসমূহ
 # =========================================================
-if current_action == "Cash Management":
+
+# এখানে আমরা ভেরিয়েবলটিকে স্টান্ডার্ডাইজ করলাম
+current_action = st.session_state.current_action
+
+if current_action == "Add New":
+    st.header("➕ Add New Second Party")
+    with st.form("add_sp"):
+        name = st.text_input("Party Name")
+        contact = st.text_input("Contact Number")
+        c1 = st.text_input("Comments_01")
+        c2 = st.text_input("Comments_02")
+        if st.form_submit_button("Save"):
+            conn = sqlite3.connect(DB_NAME)
+            cursor = conn.cursor()
+            try:
+                cursor.execute("INSERT INTO second_parties (party_name, contact_number, comments_01, comments_02) VALUES (?,?,?,?)", (name, contact, c1, c2))
+                conn.commit()
+                st.success("Saved!")
+            except: st.error("Error! Name already exists.")
+            conn.close()
+
+elif current_action == "View All":
+    st.header("📋 All Second Parties")
+    conn = sqlite3.connect(DB_NAME)
+    df = pd.read_sql("SELECT id as Serial_No, party_name as Second_Party_Name, contact_number as Contact_Number, comments_01 as Comments_01, comments_02 as Comments_02 FROM second_parties", conn)
+    conn.close()
+    st.table(df)
+
+elif current_action == "Cash Management":
     st.title("💵 Cash Management")
-    st.subheader("ক্যাশ জমার হিসাব")
-    st.write("এখানে ক্যাশ ইনপুট এবং ক্যাশ জমার ফর্ম ও ডাটা থাকবে।")
+    st.subheader("Cash Deposit Calculation")
+    st.write("Input Cash here.")
 
 elif current_action == "Expense Management":
     st.title("📉 Expense Management")
-    st.subheader("দৈনন্দিন খরচের হিসাব")
-    st.write("এখানে দৈনন্দিন সব খরচের হিসাব বা তালিকা থাকবে।")
+    st.subheader("Daily Expense Calculation")
+    st.write("Daily expense list.")
 
 elif current_action == "Others":
     st.title("📁 Others Account")
-    st.subheader("অন্যান্য বিবিধ হিসাব")
-    st.write("এখানে অন্যান্য ফুটকর বা বিবিধ হিসাব থাকবে।")
+    st.subheader("Other Accounts")
+    st.write("Other petty accounts.")
 
 # ==============================================================================
 # ৯. গ্লোবাল একটিভ ডায়ালগ কন্ট্রোলার
