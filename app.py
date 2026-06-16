@@ -1,3 +1,6 @@
+Python
+
+
 # ==============================================================================
 # ১. ইম্পোর্ট এবং পেজ কনফিগারেশন
 # ==============================================================================
@@ -11,13 +14,13 @@ import base64
 from PIL import Image
 
 st.set_page_config(page_title="M/S Jabed Enterprise", layout="wide", initial_sidebar_state="expanded")
+
 # ==============================================================================
-# লগইন সিস্টেম (সুরক্ষার জন্য)
+# লগইন সিস্টেম (সুরক্ষার জন্য এবং রোল ম্যানেজমেন্ট)
 # ==============================================================================
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
-# নতুন ৩টি ইউজার এবং রোল ভিত্তিক সেশন স্টেট সেটআপ
 if 'user_role' not in st.session_state:
     st.session_state.user_role = None
 
@@ -35,13 +38,12 @@ if not st.session_state.logged_in:
         st.markdown("<h3 style='text-align: center; color: #10b981;'>🔐 M/S JABED ENTERPRISE</h3>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #a0a0a0; text-align: center;'>দয়া করে সঠিক ইউজারনেম ও পাসওয়ার্ড দিয়ে লগইন করুন।</p>", unsafe_allow_html=True)
         
-with st.form("login_form"):
+        with st.form("login_form"):
             username = st.text_input("ইউজারনেম (Username)")
             password = st.text_input("পাসওয়ার্ড (Password)", type="password")
             login_button = st.form_submit_button("লগইন করুন", use_container_width=True)
             
             if login_button:
-                # ডায়নামিক ক্রেডেনশিয়াল চেকিং এবং রোল অ্যাসাইনমেন্ট
                 if username in st.session_state.credentials and password == st.session_state.credentials[username]:
                     st.session_state.logged_in = True
                     st.session_state.user_role = username
@@ -59,6 +61,7 @@ with st.form("login_form"):
                 else:
                     st.error("ভুল ইউজারনেম অথবা পাসওয়ার্ড! আবার চেষ্টা করুন।")
     st.stop() # লগইন না করা পর্যন্ত নিচের কোনো কোড বা মেনু স্ক্রিনে আসবে না
+
 # ==============================================================================
 # ২. ডাইনামিক পাথ ও ফোল্ডার সেটআপ
 # ==============================================================================
@@ -260,35 +263,35 @@ def show_employee_details(emp_id, company):
                 else:
                     st.caption("[ No NID Card ]")
 
-        st.markdown("<h4 style='color:#1f852c; margin-top:10px;'>📂 Family Information</h4>", unsafe_allow_html=True)
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown(f"**Father's Name:** {father_name if father_name else '-'}")
-        with c2:
-            st.markdown(f"**Mother's Name:** {mother_name if mother_name else '-'}")
-            st.markdown(f"**Father's NID:** {father_nid if father_nid else '-'}")
+                st.markdown("<h4 style='color:#1f852c; margin-top:10px;'>📂 Family Information</h4>", unsafe_allow_html=True)
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.markdown(f"**Father's Name:** {father_name if father_name else '-'}")
+                with c2:
+                    st.markdown(f"**Mother's Name:** {mother_name if mother_name else '-'}")
+                    st.markdown(f"**Father's NID:** {father_nid if father_nid else '-'}")
 
-        st.markdown("<h4 style='color:#1f852c; margin-top:10px;'>🛡️ Guarantor Details & Documents</h4>", unsafe_allow_html=True)
-        g_col1, g_col2 = st.columns([4.5, 2.5])
-        with g_col1:
-            st.markdown(f"**Guarantor Name:** {guarantor_name if guarantor_name else '-'}")
-            st.markdown(f"**Guarantor NID No:** {guarantor_nid if guarantor_nid else '-'}")
-            st.markdown(f"**Guarantor Mobile:** {guarantor_mobile if guarantor_mobile else '-'}")
-        with g_col2:
-            g_img_c1, g_img_c2 = st.columns(2)
-            with g_img_c1:
-                if os.path.exists(guar_photo_path):
-                    st.image(guar_photo_path, caption="Guar Photo", use_container_width=True)
-                else:
-                    st.caption("[ No Photo ]")
-            with g_img_c2:
-                if os.path.exists(guar_nid_path):
-                    st.image(guar_nid_path, caption="Guar NID Card", use_container_width=True)
-                else:
-                    st.caption("[ No NID Card ]")
+                st.markdown("<h4 style='color:#1f852c; margin-top:10px;'>🛡️ Guarantor Details & Documents</h4>", unsafe_allow_html=True)
+                g_col1, g_col2 = st.columns([4.5, 2.5])
+                with g_col1:
+                    st.markdown(f"**Guarantor Name:** {guarantor_name if guarantor_name else '-'}")
+                    st.markdown(f"**Guarantor NID No:** {guarantor_nid if guarantor_nid else '-'}")
+                    st.markdown(f"**Guarantor Mobile:** {guarantor_mobile if guarantor_mobile else '-'}")
+                with g_col2:
+                    g_img_c1, g_img_c2 = st.columns(2)
+                    with g_img_c1:
+                        if os.path.exists(guar_photo_path):
+                            st.image(guar_photo_path, caption="Guar Photo", use_container_width=True)
+                        else:
+                            st.caption("[ No Photo ]")
+                    with g_img_c2:
+                        if os.path.exists(guar_nid_path):
+                            st.image(guar_nid_path, caption="Guar NID Card", use_container_width=True)
+                        else:
+                            st.caption("[ No NID Card ]")
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.success(f"**Salary Structure:** Basic: {basic_salary:,.1f} ৳ | Variable: {variable_salary:,.1f} ৳ | **Total Salary: {total_salary:,.1f} ৳**")
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.success(f"**Salary Structure:** Basic: {basic_salary:,.1f} ৳ | Variable: {variable_salary:,.1f} ৳ | **Total Salary: {total_salary:,.1f} ৳**")
 
     else:
         if st.session_state.get('confirm_exit_prompt'):
@@ -435,32 +438,44 @@ menu_options = ["Add New Employee", "Add Employee By Upload", "View All Employee
 with st.sidebar.expander("📁 Employee Management", expanded=True):
     st.markdown("<small style='color:#888;'>Employee Actions:</small>", unsafe_allow_html=True)
     
-    # 📁 bKash ফোল্ডার সেকশন
+    # 📁 bKash সেকশন (Folder নাম কোনো বাড়তি শব্দ ছাড়া)
     with st.expander("📁 bKash", expanded=(st.session_state.current_company == "bKash")):
         if st.session_state.user_role in ["admin", "bKash_User"]:
             bkash_default = menu_options.index(st.session_state.current_action) if (st.session_state.current_company == "bKash" and st.session_state.current_action in menu_options) else None
             st.radio("bKash Options", options=menu_options, index=bkash_default, key="bkash_radio", on_change=on_bkash_change, label_visibility="collapsed")
         else:
-            # পদ্ধতি ক: ইনঅ্যাক্টিভ বা রেসপন্স না করা (অ্যাক্সেস লক মেসেজ)
-            st.markdown("<p style='color: #ef4444; font-weight: bold; margin-bottom: 0;'>🔒 অ্যাক্সেস লকড</p><p style='color: #a0a0a0; font-size: 13px;'>আপনার এই সেকশনে কাজ করার অনুমতি নেই।</p>", unsafe_allow_html=True)
+            # পদ্ধতি ক: অ্যাক্সেস লকড মেসেজ (কোনো রেসপন্স বা সাব-মেনু থাকবে না)
+            st.markdown("<p style='color: #ef4444; font-weight: bold; margin-bottom: 0;'>🔒 অ্যাক্সেস লকড</p><p style='color: #a0a0a0; font-size: 13px;'>আপনার এই ফোল্ডারে কাজ করার অনুমতি নেই।</p>", unsafe_allow_html=True)
     
-    # 📁 GP ফোল্ডার সেকশন
+    # 📁 GP সেকশন (Folder নাম কোনো বাড়তি শব্দ ছাড়া)
     with st.expander("📁 GP", expanded=(st.session_state.current_company == "GP")):
         if st.session_state.user_role in ["admin", "GP_User"]:
             gp_default = menu_options.index(st.session_state.current_action) if (st.session_state.current_company == "GP" and st.session_state.current_action in menu_options) else None
             st.radio("GP Options", options=menu_options, index=gp_default, key="gp_radio", on_change=on_gp_change, label_visibility="collapsed")
         else:
-            # পদ্ধতি ক: ইনঅ্যাক্টিভ বা রেসপন্স না করা (অ্যাক্সেস লক মেসেজ)
-            st.markdown("<p style='color: #ef4444; font-weight: bold; margin-bottom: 0;'>🔒 অ্যাক্সেস লকড</p><p style='color: #a0a0a0; font-size: 13px;'>আপনার এই সেকশনে কাজ করার অনুমতি নেই।</p>", unsafe_allow_html=True)
+            # পদ্ধতি ক: অ্যাক্সেস লকড মেসেজ (কোনো রেসপন্স বা সাব-মেনু থাকবে না)
+            st.markdown("<p style='color: #ef4444; font-weight: bold; margin-bottom: 0;'>🔒 অ্যাক্সেস লকড</p><p style='color: #a0a0a0; font-size: 13px;'>আপনার এই ফোল্ডারে কাজ করার অনুমতি নেই।</p>", unsafe_allow_html=True)
 
-# 🔐 শুধুমাত্র "admin"-এর জন্য ওটিপিসহ পাসওয়ার্ড পরিবর্তন প্যানেল
+st.sidebar.markdown("---")
+with st.sidebar.expander("💰 Sales Management", expanded=False):
+    st.write("Sales Management features coming soon...")
+with st.sidebar.expander("📊 Account Management", expanded=False):
+    if st.sidebar.button("💵 Cash Management", use_container_width=True):
+        st.session_state.current_action = "Cash Management"
+    if st.sidebar.button("📉 Expense Management", use_container_width=True):
+        st.session_state.current_action = "Expense Management"
+    if st.sidebar.button("📁 Others", use_container_width=True):
+        st.session_state.current_action = "Others"
+
+# 🔐 শুধুমাত্র "admin"-এর জন্য ওটিপিসহ পাসওয়ার্ড পরিবর্তন প্যানেল (হ্যাং-ফ্রি সম্পূর্ণ ভ্যালিডেটেড ভার্সন)
 if st.session_state.user_role == "admin":
     st.sidebar.markdown("---")
     with st.sidebar.expander("⚙️ পাসওয়ার্ড রিসেট প্যানেল (Admin)", expanded=False):
-        target_user = st.selectbox("ইউজার সিলেক্ট করুন", list(st.session_state.credentials.keys()))
+        # এক্সপ্যান্ডারের ভেতরে সরাসরি st. উপাদান ব্যবহার করা হয়েছে (হ্যাং হওয়ার মূল কারণ সমাধান করা হয়েছে)
+        target_user = st.selectbox("ইউজার সিলেক্ট করুন", list(st.session_state.credentials.keys()), key="admin_user_select")
         new_password = st.text_input("নতুন পাসওয়ার্ড লিখুন", type="password", key="admin_new_pwd")
         
-        if st.sidebar.button("📱 OTP পাঠান (সিমুলেশন)", use_container_width=True):
+        if st.button("📱 OTP পাঠান (সিমুলেশন)", use_container_width=True, key="admin_otp_trigger"):
             import random
             st.session_state.generated_otp = str(random.randint(1000, 9999))
             st.toast(f"🔑 [Admin OTP]: {st.session_state.generated_otp} (অ্যাডমিনের ফোনে পাঠানো হলো)", icon="💬")
@@ -469,28 +484,24 @@ if st.session_state.user_role == "admin":
             st.info(f"💡 টেস্ট ওটিপি কোড: **{st.session_state.generated_otp}**")
             entered_otp = st.text_input("৪ ডিজিটের OTP কোডটি দিন", key="admin_otp_field")
             
-            if st.sidebar.button("💾 পাসওয়ার্ড পরিবর্তন নিশ্চিত করুন", use_container_width=True):
+            if st.button("💾 পাসওয়ার্ড পরিবর্তন নিশ্চিত করুন", use_container_width=True, key="admin_confirm_pwd_change"):
                 if entered_otp == st.session_state.generated_otp:
                     if new_password:
+                        # সেশন ক্রেডিনশিয়াল আপডেট
                         st.session_state.credentials[target_user] = new_password
-                        st.sidebar.success(f"✅ {target_user}-এর পাসওয়ার্ড পরিবর্তন সফল!")
+                        st.success(f"✅ {target_user}-এর পাসওয়ার্ড পরিবর্তন সফল!")
+                        
+                        # ওটিপি স্টেট মুছে ফেলা
                         del st.session_state.generated_otp
+                        
+                        # সামান্য সময় বিরতি ও রিরান
+                        import time
+                        time.sleep(0.8)
                         st.rerun()
                     else:
-                        st.sidebar.error("পাসওয়ার্ডের ঘরটি খালি রাখা যাবে না!")
+                        st.error("পাসওয়ার্ডের ঘরটি খালি রাখা যাবে না!")
                 else:
-                    st.sidebar.error("ভুল OTP কোড! আবার চেষ্টা করুন।")
-
-st.sidebar.markdown("---")
-with st.sidebar.expander("💰 Sales Management", expanded=False):
-    st.write("Sales Management features coming soon...")
-with st.sidebar.expander("📊 Account Management", expanded=False):
-    if st.button("💵 Cash Management", use_container_width=True):
-        st.session_state.current_action = "Cash Management"
-    if st.button("📉 Expense Management", use_container_width=True):
-        st.session_state.current_action = "Expense Management"
-    if st.button("📁 Others", use_container_width=True):
-        st.session_state.current_action = "Others"
+                    st.error("ভুল OTP কোড! আবার চেষ্টা করুন।")
 
 current_company = st.session_state.current_company
 current_action = st.session_state.current_action
@@ -504,7 +515,7 @@ if current_action is None:
     st.markdown("<h2 style='text-align: center; font-family: \"Times New Roman\", serif; font-weight: bold;'>M/S JABED ENTERPRISE</h2>", unsafe_allow_html=True)
     st.markdown("<h4 style='text-align: center; color: #a0a0a0;'>Employee Management সিস্টেমে আপনাকে স্বাগতম!</h4>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
-    st.info("💡 কাজ শুরু করতে বাম পাশের সাইডবার মেনুর **Employee Management** থেকে **bKash Employee** অথবা **GP Employee**-এর যেকোনো একটি অপশন সিলেক্ট করুন।")
+    st.info("💡 কাজ শুরু করতে বাম পাশের সাইডবার মেনুর **Employee Management** থেকে **bKash** অথবা **GP**-এর যেকোনো একটি অপশন সিলেক্ট করুন।")
 
 elif current_action == "Add New Employee":
     st.markdown(f"### 👥 Add New Employee ({current_company})")
