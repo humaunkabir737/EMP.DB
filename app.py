@@ -35,15 +35,23 @@ if not st.session_state.logged_in:
         st.markdown("<h3 style='text-align: center; color: #10b981;'>🔐 M/S JABED ENTERPRISE</h3>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #a0a0a0; text-align: center;'>দয়া করে সঠিক ইউজারনেম ও পাসওয়ার্ড দিয়ে লগইন করুন।</p>", unsafe_allow_html=True)
         
-        with st.form("login_form"):
+with st.form("login_form"):
             username = st.text_input("ইউজারনেম (Username)")
             password = st.text_input("পাসওয়ার্ড (Password)", type="password")
             login_button = st.form_submit_button("লগইন করুন", use_container_width=True)
             
             if login_button:
-                # 💡 নিচে আপনি আপনার পছন্দমতো ইউজারনেম এবং পাসওয়ার্ড বদলে নিতে পারেন
-                if username == "admin" and password == "jabed2026":
+                # ডায়নামিক ক্রেডেনশিয়াল চেকিং এবং রোল অ্যাসাইনমেন্ট
+                if username in st.session_state.credentials and password == st.session_state.credentials[username]:
                     st.session_state.logged_in = True
+                    st.session_state.user_role = username
+                    
+                    # রোল অনুযায়ী অটোমেটিক ডিফল্ট কোম্পানি সেটআপ
+                    if username == "bKash_User":
+                        st.session_state.current_company = "bKash"
+                    elif username == "GP_User":
+                        st.session_state.current_company = "GP"
+                        
                     st.success("লগইন সফল হয়েছে!")
                     import time
                     time.sleep(0.5)
