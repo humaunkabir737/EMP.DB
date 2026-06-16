@@ -13,10 +13,12 @@ from PIL import Image
 st.set_page_config(page_title="M/S Jabed Enterprise", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
-# লগইন সিস্টেম (সুরক্ষার জন্য)
+# লগইন সিস্টেম (সুরক্ষার জন্য রোল-বেসড অ্যাক্সেসসহ)
 # ==============================================================================
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
+if 'user_role' not in st.session_state:
+    st.session_state.user_role = None
 
 if not st.session_state.logged_in:
     st.markdown("<br><br>", unsafe_allow_html=True)
@@ -31,9 +33,31 @@ if not st.session_state.logged_in:
             login_button = st.form_submit_button("লগইন করুন", use_container_width=True)
             
             if login_button:
+                # ১. এডমিন ইউজার (সব দেখতে পাবেন)
                 if username == "admin" and password == "jabed2026":
                     st.session_state.logged_in = True
-                    st.success("লগইন সফল হয়েছে!")
+                    st.session_state.user_role = "admin"
+                    st.success("এডমিন হিসেবে লগইন সফল হয়েছে!")
+                    import time
+                    time.sleep(0.5)
+                    st.rerun()
+                
+                # ২. বিকাশ ইউজার (শুধু বিকাশ ফোল্ডার দেখতে পাবেন)
+                elif username == "bKas_User" and password == "bkash2026": # 👈 এখানে আপনার পছন্দমতো পাসওয়ার্ড দিন
+                    st.session_state.logged_in = True
+                    st.session_state.user_role = "bKas_User"
+                    st.session_state.current_company = "bKash" # ডিফল্ট কোম্পানি সেট
+                    st.success("বিকাশ ইউজার লগইন সফল!")
+                    import time
+                    time.sleep(0.5)
+                    st.rerun()
+                
+                # ৩. জিপি ইউজার (শুধু জিপি ফোল্ডার দেখতে পাবেন)
+                elif username == "GP_User" and password == "gp2026": # 👈 এখানে আপনার পছন্দমতো পাসওয়ার্ড দিন
+                    st.session_state.logged_in = True
+                    st.session_state.user_role = "GP_User"
+                    st.session_state.current_company = "GP" # ডিফল্ট কোম্পানি সেট
+                    st.success("GP ইউজার লগইন সফল!")
                     import time
                     time.sleep(0.5)
                     st.rerun()
@@ -145,7 +169,7 @@ init_db()
 # ৪. গ্লোবাল সেশন স্টেট
 # ==============================================================================
 if 'current_company' not in st.session_state:
-    st.session_state.current_company = "bKash"
+    st.session_state.current_company = "None"
 
 if 'current_action' not in st.session_state:
     st.session_state.current_action = None
