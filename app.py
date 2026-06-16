@@ -429,77 +429,99 @@ if st.sidebar.button("🔒 লগআউট (Logout)", use_container_width=True):
     st.session_state.logged_in = False
     st.rerun()
 
-st.sidebar.markdown("<br>", unsafe_allow_html=True)
-menu_options = ["Add New Employee", "Add Employee By Upload", "View All Employee"]
+st.sidebar.markdown("<hr style='margin: 10px 0px; border-color: #444;'>", unsafe_allow_html=True)
+
+menu_options_emp = ["Add New Employee", "Add Employee By Upload", "View All Employee"]
 
 # ---------------------------------------------------------
-# 📁 bKash Main Folder
+# ১. 📁 bKash Main Folder
 # ---------------------------------------------------------
 with st.sidebar.expander("📁 bKash", expanded=False):
-    st.markdown("<p style='color:#10b981; font-weight:bold; margin-bottom:5px;'>📁 Employee Management</p>", unsafe_allow_html=True)
-    bkash_default = menu_options.index(st.session_state.current_action) if (st.session_state.current_company == "bKash" and st.session_state.current_action in menu_options) else None
-    st.radio("bKash Options", options=menu_options, index=bkash_default, key="bkash_radio", on_change=on_bkash_change, label_visibility="collapsed")
     
-    st.markdown("<hr style='margin:10px 0px; border-color:#444;'>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#facc15; font-weight:bold; margin-bottom:5px;'>💰 Sales Management</p>", unsafe_allow_html=True)
-    st.caption("Coming soon...")
+    # সাব-ফোল্ডার: Employee Management
+    with st.expander("📁 Employee Management", expanded=False):
+        bk_default = menu_options_emp.index(st.session_state.current_action) if (st.session_state.current_company == "bKash" and st.session_state.current_action in menu_options_emp) else None
+        
+        def bkash_emp_cb():
+            st.session_state.current_company = "bKash"
+            st.session_state.current_action = st.session_state.bkash_emp_radio
+            st.session_state.active_emp_id = None
+        
+        st.radio("bKash Emp Options", options=menu_options_emp, index=bk_default, key="bkash_emp_radio", on_change=bkash_emp_cb, label_visibility="collapsed")
     
-    st.markdown("<hr style='margin:10px 0px; border-color:#444;'>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#60a5fa; font-weight:bold; margin-bottom:5px;'>📊 Account Management</p>", unsafe_allow_html=True)
-    if st.button("💵 Cash Management", key="bkash_cash", use_container_width=True):
-        st.session_state.current_company = "bKash"
-        st.session_state.current_action = "Cash Management"
-        st.rerun()
-    if st.button("📉 Expense Management", key="bkash_exp", use_container_width=True):
-        st.session_state.current_company = "bKash"
-        st.session_state.current_action = "Expense Management"
-        st.rerun()
+    # সাব-ফোল্ডার: Sales Management
+    with st.expander("📁 Sales Management", expanded=False):
+        st.caption("Sales features coming soon...")
+        
+    # সাব-ফোল্ডার: Accounts Management
+    with st.expander("📁 Accounts Management", expanded=False):
+        if st.button("💵 Cash Management", key="bk_cash", use_container_width=True):
+            st.session_state.current_company = "bKash"
+            st.session_state.current_action = "Cash Management"
+            st.rerun()
+        if st.button("📉 Expense Management", key="bk_exp", use_container_width=True):
+            st.session_state.current_company = "bKash"
+            st.session_state.current_action = "Expense Management"
+            st.rerun()
+            
+    # সাব-ফোল্ডার: Others
+    with st.expander("📁 Others", expanded=False):
+        if st.button("📁 Others Account", key="bk_oth", use_container_width=True):
+            st.session_state.current_company = "bKash"
+            st.session_state.current_action = "Others"
+            st.rerun()
 
 # ---------------------------------------------------------
-# 📁 GP Main Folder
+# ২. 📁 GP Main Folder
 # ---------------------------------------------------------
 with st.sidebar.expander("📁 GP", expanded=False):
-    st.markdown("<p style='color:#10b981; font-weight:bold; margin-bottom:5px;'>📁 Employee Management</p>", unsafe_allow_html=True)
-    gp_default = menu_options.index(st.session_state.current_action) if (st.session_state.current_company == "GP" and st.session_state.current_action in menu_options) else None
-    st.radio("GP Options", options=menu_options, index=gp_default, key="gp_radio", on_change=on_gp_change, label_visibility="collapsed")
     
-    st.markdown("<hr style='margin:10px 0px; border-color:#444;'>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#facc15; font-weight:bold; margin-bottom:5px;'>💰 Sales Management</p>", unsafe_allow_html=True)
-    st.caption("Coming soon...")
+    # সাব-ফোল্ডার: Employee Management
+    with st.expander("📁 Employee Management", expanded=False):
+        gp_default = menu_options_emp.index(st.session_state.current_action) if (st.session_state.current_company == "GP" and st.session_state.current_action in menu_options_emp) else None
+        
+        def gp_emp_cb():
+            st.session_state.current_company = "GP"
+            st.session_state.current_action = st.session_state.gp_emp_radio
+            st.session_state.active_emp_id = None
+            
+        st.radio("GP Emp Options", options=menu_options_emp, index=gp_default, key="gp_emp_radio", on_change=gp_emp_cb, label_visibility="collapsed")
     
-    st.markdown("<hr style='margin:10px 0px; border-color:#444;'>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#60a5fa; font-weight:bold; margin-bottom:5px;'>📊 Account Management</p>", unsafe_allow_html=True)
-    if st.button("💵 Cash Management", key="gp_cash", use_container_width=True):
-        st.session_state.current_company = "GP"
-        st.session_state.current_action = "Cash Management"
-        st.rerun()
-    if st.button("📉 Expense Management", key="gp_exp", use_container_width=True):
-        st.session_state.current_company = "GP"
-        st.session_state.current_action = "Expense Management"
-        st.rerun()
-
-# ---------------------------------------------------------
-# 📁 Others Folder
-# ---------------------------------------------------------
-with st.sidebar.expander("📁 Others", expanded=False):
-    if st.button("📁 Others Account", use_container_width=True):
-        st.session_state.current_company = "Others"
-        st.session_state.current_action = "Others"
-        st.rerun()
+    # সাব-ফোল্ডার: Sales Management
+    with st.expander("📁 Sales Management", expanded=False):
+        st.caption("Sales features coming soon...")
+        
+    # সাব-ফোল্ডার: Accounts Management
+    with st.expander("📁 Accounts Management", expanded=False):
+        if st.button("💵 Cash Management", key="gp_cash", use_container_width=True):
+            st.session_state.current_company = "GP"
+            st.session_state.current_action = "Cash Management"
+            st.rerun()
+        if st.button("📉 Expense Management", key="gp_exp", use_container_width=True):
+            st.session_state.current_company = "GP"
+            st.session_state.current_action = "Expense Management"
+            st.rerun()
+            
+    # সাব-ফোল্ডার: Others
+    with st.expander("📁 Others", expanded=False):
+        if st.button("📁 Others Account", key="gp_oth", use_container_width=True):
+            st.session_state.current_company = "GP"
+            st.session_state.current_action = "Others"
+            st.rerun()
 
 st.sidebar.markdown("---")
 
 # ---------------------------------------------------------
-# ⚙️ পাসওয়ার্ড রিসেট প্যানেল (Admin)
+# ৩. ⚙️ পাসওয়ার্ড রিসেট প্যানেল (Admin)
 # ---------------------------------------------------------
 with st.sidebar.expander("⚙️ পাসওয়ার্ড রিসেট প্যানেল (Admin)", expanded=False):
     st.markdown("<small style='font-weight:bold;'>ইউজার সিলেক্ট করুন</small>", unsafe_allow_html=True)
-    st.selectbox("Select User", ["admin", "manager"], label_visibility="collapsed")
+    st.selectbox("Select User", ["admin", "manager"], label_visibility="collapsed", key="admin_user_select")
     
     st.markdown("<small style='font-weight:bold;'>নতুন পাসওয়ার্ড লিখুন</small>", unsafe_allow_html=True)
-    st.text_input("New Password", type="password", label_visibility="collapsed")
+    st.text_input("New Password", type="password", label_visibility="collapsed", key="admin_new_pass")
     
-    if st.button("📱 OTP পাঠান (সিমুলেশন)", use_container_width=True):
+    if st.button("📱 OTP পাঠান (সিমুলেশন)", use_container_width=True, key="admin_otp_btn"):
         st.success("OTP পাঠানো হয়েছে!")
 
 current_company = st.session_state.current_company
