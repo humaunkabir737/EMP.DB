@@ -17,6 +17,17 @@ st.set_page_config(page_title="M/S Jabed Enterprise", layout="wide", initial_sid
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
+# নতুন ৩টি ইউজার এবং রোল ভিত্তিক সেশন স্টেট সেটআপ
+if 'user_role' not in st.session_state:
+    st.session_state.user_role = None
+
+if 'credentials' not in st.session_state:
+    st.session_state.credentials = {
+        "admin": "jabed2026",
+        "bKash_User": "bkash2026",
+        "GP_User": "gp2026"
+    }
+
 if not st.session_state.logged_in:
     st.markdown("<br><br>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 1.5, 1]) # ফর্মটি মাঝখানে দেখানোর জন্য
