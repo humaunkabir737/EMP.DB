@@ -38,27 +38,21 @@ if not st.session_state.logged_in:
                     st.session_state.user_role = "admin"
                     st.session_state.current_action = None 
                     st.success("এডমিন হিসেবে লগইন সফল হয়েছে!")
-                    import time
-                    time.sleep(0.5)
-                    st.rerun()
+                    import time; time.sleep(0.5); st.rerun()
                 elif username == "bKash_User" and password == "bkash2026": 
                     st.session_state.logged_in = True
                     st.session_state.user_role = "bKash_User"
                     st.session_state.current_company = "bKash" 
                     st.session_state.current_action = None 
                     st.success("বিকাশ ইউজার লগইন সফল!")
-                    import time
-                    time.sleep(0.5)
-                    st.rerun()
+                    import time; time.sleep(0.5); st.rerun()
                 elif username == "GP_User" and password == "gp2026": 
                     st.session_state.logged_in = True
                     st.session_state.user_role = "GP_User"
                     st.session_state.current_company = "GP" 
                     st.session_state.current_action = None 
                     st.success("GP ইউজার লগইন সফল!")
-                    import time
-                    time.sleep(0.5)
-                    st.rerun()
+                    import time; time.sleep(0.5); st.rerun()
                 else:
                     st.error("ভুল ইউজারনেম অথবা পাসওয়ার্ড! আবার চেষ্টা করুন।")
     st.stop()
@@ -89,30 +83,14 @@ def init_db():
     
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS employees (
-            emp_id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            designation TEXT,
-            mobile TEXT,
-            alt_contact TEXT,
-            join_date TEXT,
-            basic_salary REAL,
-            variable_salary REAL,
-            total_salary REAL,
-            company TEXT NOT NULL,
-            father_name TEXT,
-            father_nid TEXT,
-            mother_name TEXT,
-            emp_nid TEXT,
-            guarantor_name TEXT,
-            guarantor_nid TEXT,
-            guarantor_mobile TEXT
+            emp_id TEXT PRIMARY KEY, name TEXT NOT NULL, designation TEXT, mobile TEXT, alt_contact TEXT, join_date TEXT,
+            basic_salary REAL, variable_salary REAL, total_salary REAL, company TEXT NOT NULL, father_name TEXT,
+            father_nid TEXT, mother_name TEXT, emp_nid TEXT, guarantor_name TEXT, guarantor_nid TEXT, guarantor_mobile TEXT
         )
     ''')
     
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='second_parties'")
-    table_exists = cursor.fetchone()
-    
-    if table_exists:
+    if cursor.fetchone():
         cursor.execute("PRAGMA table_info(second_parties)")
         existing_sp_columns = [col[1] for col in cursor.fetchall()]
         if 'company' not in existing_sp_columns:
@@ -120,84 +98,46 @@ def init_db():
             cursor.execute("ALTER TABLE second_parties RENAME TO old_second_parties")
             cursor.execute('''
                 CREATE TABLE second_parties (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                    company TEXT NOT NULL,
-                    party_name TEXT NOT NULL, 
-                    contact_number TEXT, 
-                    comments_01 TEXT, 
-                    comments_02 TEXT,
-                    status TEXT DEFAULT 'Active',
-                    UNIQUE(company, party_name)
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, company TEXT NOT NULL, party_name TEXT NOT NULL, 
+                    contact_number TEXT, comments_01 TEXT, comments_02 TEXT, status TEXT DEFAULT 'Active', UNIQUE(company, party_name)
                 )
             ''')
             if has_status:
-                cursor.execute('''
-                    INSERT INTO second_parties (id, company, party_name, contact_number, comments_01, comments_02, status)
-                    SELECT id, 'bKash', party_name, contact_number, comments_01, comments_02, IFNULL(status, 'Active') FROM old_second_parties
-                ''')
+                cursor.execute("INSERT INTO second_parties (id, company, party_name, contact_number, comments_01, comments_02, status) SELECT id, 'bKash', party_name, contact_number, comments_01, comments_02, IFNULL(status, 'Active') FROM old_second_parties")
             else:
-                cursor.execute('''
-                    INSERT INTO second_parties (company, party_name, contact_number, comments_01, comments_02, status)
-                    SELECT 'bKash', party_name, contact_number, comments_01, comments_02, 'Active' FROM old_second_parties
-                ''')
+                cursor.execute("INSERT INTO second_parties (company, party_name, contact_number, comments_01, comments_02, status) SELECT 'bKash', party_name, contact_number, comments_01, comments_02, 'Active' FROM old_second_parties")
             cursor.execute("DROP TABLE old_second_parties")
     else:
         cursor.execute('''
             CREATE TABLE second_parties (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                company TEXT NOT NULL,
-                party_name TEXT NOT NULL, 
-                contact_number TEXT, 
-                comments_01 TEXT, 
-                comments_02 TEXT,
-                status TEXT DEFAULT 'Active',
-                UNIQUE(company, party_name)
+                id INTEGER PRIMARY KEY AUTOINCREMENT, company TEXT NOT NULL, party_name TEXT NOT NULL, 
+                contact_number TEXT, comments_01 TEXT, comments_02 TEXT, status TEXT DEFAULT 'Active', UNIQUE(company, party_name)
             )
         ''')
     
     default_parties = ["Mother_Wallet", "Hand_Cash", "Petty_Cash", "Bank", "BGP", "Dulal", "Shafayat", "Madina", "Owner", "GAS", "Auto_Rice", "Others", "bKash", "Commission", "Al_Arafa", "Rekit", "DMCBL", "Kabita_Mami", "Ashim_Da", "Al_Amin"]
     for party in default_parties:
-        cursor.execute("""
-            INSERT OR IGNORE INTO second_parties (company, party_name, contact_number, comments_01, comments_02, status) 
-            VALUES ('bKash', ?, '', '', '', 'Active')
-        """, (party,))
+        cursor.execute("INSERT OR IGNORE INTO second_parties (company, party_name, contact_number, comments_01, comments_02, status) VALUES ('bKash', ?, '', '', '', 'Active')", (party,))
     
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS cash_transactions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT NOT NULL,
-            company TEXT NOT NULL,
-            second_party TEXT NOT NULL,
-            type TEXT NOT NULL,
-            amount REAL NOT NULL,
-            remarks TEXT
+            id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, company TEXT NOT NULL, second_party TEXT NOT NULL, type TEXT NOT NULL, amount REAL NOT NULL, remarks TEXT
         )
     ''')
     
     cursor.execute("PRAGMA table_info(employees)")
     existing_columns = [col[1] for col in cursor.fetchall()]
-    
-    required_cols = {
-        'company': "TEXT DEFAULT 'bKash'",
-        'father_name': "TEXT",
-        'father_nid': "TEXT",
-        'mother_name': "TEXT",
-        'emp_nid': "TEXT",
-        'guarantor_name': "TEXT",
-        'guarantor_nid': "TEXT",
-        'guarantor_mobile': "TEXT"
-    }
+    required_cols = {'company': "TEXT DEFAULT 'bKash'", 'father_name': "TEXT", 'father_nid': "TEXT", 'mother_name': "TEXT", 'emp_nid': "TEXT", 'guarantor_name': "TEXT", 'guarantor_nid': "TEXT", 'guarantor_mobile': "TEXT"}
     for col_name, col_type in required_cols.items():
         if col_name not in existing_columns:
             cursor.execute(f"ALTER TABLE employees ADD COLUMN {col_name} {col_type}")
             
-    conn.commit()
-    conn.close()
+    conn.commit(); conn.close()
 
 init_db()
 
 # ==============================================================================
-# ৪. গ্লোবাল সেশন স্টেট
+# ৪. গ্লোবাল সেশন স্টেট এবং হেল্পার ফাংশন
 # ==============================================================================
 for state_key, default_val in [('current_company', 'None'), ('current_action', None), ('active_emp_id', None), ('dialog_edit_mode', False), ('active_party_id', None), ('party_edit_mode', False)]:
     if state_key not in st.session_state:
@@ -205,6 +145,18 @@ for state_key, default_val in [('current_company', 'None'), ('current_action', N
 
 def open_edit_mode(): st.session_state.dialog_edit_mode = True
 def close_edit_mode(): st.session_state.dialog_edit_mode = False
+
+# সুন্দর এবং এলাইনমেন্ট-ঠিক রাখা নো-ইমেজ ফ্রেম জেনারেটর
+def render_no_image_frame(title):
+    return f"""
+    <div style="border: 2px dashed #444444; border-radius: 8px; background-color: #1e1e1e; 
+                height: 145px; display: flex; flex-direction: column; justify-content: center; 
+                align-items: center; color: #888888; text-align: center; margin-bottom: 15px; padding: 5px;">
+        <span style="font-size: 26px; margin-bottom: 2px;">🖼️</span>
+        <b style="font-size: 13px; color: #cccccc;">No Image</b>
+        <span style="font-size: 11px; color: #666666; margin-top: 2px;">({title})</span>
+    </div>
+    """
 
 # ==============================================================================
 # ৫. হেডার ডিজাইন
@@ -218,8 +170,7 @@ def render_header():
             with open(logo_path, "rb") as f:
                 encoded = base64.b64encode(f.read()).decode()
             logo_html = f'<img src="data:image/{ext};base64,{encoded}" style="height:55px; vertical-align: middle;">'
-            has_logo = True
-            break
+            has_logo = True; break
     title_text = '<h1 style="color: white; margin: 0; font-family:\'Times New Roman\', serif; font-size: 38px; font-weight: bold;">M/S JABED ENTERPRISE</h1>'
     header_content = f'<div style="display: flex; justify-content: center; align-items: center; gap: 12px;">{logo_html}{title_text}</div>' if has_logo else title_text
     st.markdown(f"""
@@ -231,37 +182,27 @@ def render_header():
     """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 🔍 সেকেন্ড পার্টির প্রোফাইল ডিটেইলস ও এডিট ডায়ালগ
+# 👥 সেকেন্ড পার্টির প্রোফাইল ডিটেইলস ও এডিট ডায়ালগ
 # ==============================================================================
 @st.dialog("Second Party Details", width="medium")
 def show_second_party_details(party_id):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
+    conn = sqlite3.connect(DB_NAME); cursor = conn.cursor()
     cursor.execute("SELECT id, party_name, contact_number, comments_01, comments_02, status FROM second_parties WHERE id = ?", (party_id,))
-    party = cursor.fetchone()
-    conn.close()
+    party = cursor.fetchone(); conn.close()
     if not party:
-        st.error("Second Party not found!")
-        st.session_state.active_party_id = None
-        return
+        st.error("Second Party not found!"); st.session_state.active_party_id = None; return
     p_id, p_name, p_contact, p_c1, p_c2, p_status = party
     p_status = p_status or "Active"
     
     col_t1, col_t2 = st.columns([6, 2])
     with col_t1:
         if not st.session_state.party_edit_mode:
-            if st.button("✏️ Edit", key="sp_edit_toggle_btn"):
-                st.session_state.party_edit_mode = True
-                st.rerun()
+            if st.button("✏️ Edit", key="sp_edit_toggle_btn"): st.session_state.party_edit_mode = True; st.rerun()
         else:
-            if st.button("⬅️ Back to View", key="sp_view_toggle_btn"):
-                st.session_state.party_edit_mode = False
-                st.rerun()
+            if st.button("⬅️ Back to View", key="sp_view_toggle_btn"): st.session_state.party_edit_mode = False; st.rerun()
     with col_t2:
         if st.button("❌ Close", use_container_width=True, key="sp_close_popup_btn"):
-            st.session_state.active_party_id = None
-            st.session_state.party_edit_mode = False
-            st.rerun()
+            st.session_state.active_party_id = None; st.session_state.party_edit_mode = False; st.rerun()
     st.markdown("---")
     if not st.session_state.party_edit_mode:
         st.markdown(f"### **Second Party Name:** {p_name}")
@@ -279,36 +220,31 @@ def show_second_party_details(party_id):
             new_p_c2 = st.text_input("Comments 02", value=p_c2)
             new_p_status = st.selectbox("Status", ["Active", "Inactive"], index=0 if p_status == "Active" else 1)
             if st.form_submit_button("💾 Save Changes", use_container_width=True):
-                if not new_p_name.strip(): st.error("Second Party Name খালি রাখা যাবে না!")
+                if not new_p_name.strip(): st.error("Second Party Name خالی রাখা যাবে না!")
                 else:
                     try:
-                        conn = sqlite3.connect(DB_NAME)
-                        cursor = conn.cursor()
+                        conn = sqlite3.connect(DB_NAME); cursor = conn.cursor()
                         cursor.execute("UPDATE second_parties SET party_name=?, contact_number=?, comments_01=?, comments_02=?, status=? WHERE id=?", 
                                        (new_p_name.strip(), new_p_contact.strip(), new_p_c1.strip(), new_p_c2.strip(), new_p_status, party_id))
-                        conn.commit()
-                        conn.close()
+                        conn.commit(); conn.close()
                         st.toast("সেকেন্ড পার্টির তথ্য সফলভাবে আপডেট করা হয়েছে!", icon="✅")
-                        st.session_state.active_party_id = None
-                        st.session_state.party_edit_mode = False
+                        st.session_state.active_party_id = None; st.session_state.party_edit_mode = False
                         import time; time.sleep(0.5); st.rerun()
                     except sqlite3.IntegrityError:
                         st.error("এই কোম্পানির আন্ডারে এই নামের আরেকটি সেকেন্ড পার্টি ইতিমধ্যে ডাটাবেজে বিদ্যমান!")
 
 # ==============================================================================
-# ৬. কর্মচারীর প্রোফাইল ডিটেইলস ডায়ালগ
+# 🔍 কর্মচারীর প্রোফাইল ডিটেইলস ডায়ালগ (এখানেই ডিজিটাল ফ্রেম ফিক্স করা হয়েছে)
 # ==============================================================================
 @st.dialog("Employee Profile Details", width="large")
 def show_employee_details(emp_id, company):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
+    conn = sqlite3.connect(DB_NAME); cursor = conn.cursor()
     cursor.execute("""
         SELECT emp_id, name, designation, mobile, alt_contact, join_date, basic_salary, variable_salary, total_salary,
                father_name, father_nid, mother_name, emp_nid, guarantor_name, guarantor_nid, guarantor_mobile 
         FROM employees WHERE emp_id = ? AND company = ?
     """, (emp_id, company))
-    emp = cursor.fetchone()
-    conn.close()
+    emp = cursor.fetchone(); conn.close()
     if not emp:
         st.error("Employee not found!"); st.session_state.active_emp_id = None; return
     (emp_id, name, designation, mobile, alt_contact, join_date, basic_salary, variable_salary, total_salary,
@@ -322,6 +258,7 @@ def show_employee_details(emp_id, company):
         if st.button("❌ Close Window", use_container_width=True, key="popup_close_btn"):
             st.session_state.active_emp_id = None; st.session_state.dialog_edit_mode = False; st.rerun()
     st.markdown("---")
+    
     emp_photo_path = os.path.join(PHOTO_DIR, f"{emp_id}_emp.png")
     emp_nid_path = os.path.join(EMP_NID_DIR, f"{emp_id}_nid.png")
     guar_photo_path = os.path.join(GUAR_PHOTO_DIR, f"{emp_id}_guar.png")
@@ -337,13 +274,19 @@ def show_employee_details(emp_id, company):
             st.markdown(f"**Employee NID No:** {emp_nid or '-'}")
         with col_img:
             img_c1, img_c2 = st.columns(2)
-            with img_c1: st.image(emp_photo_path, caption="Emp Photo", use_container_width=True) if os.path.exists(emp_photo_path) else st.caption("[ No Photo ]")
-            with img_c2: st.image(emp_nid_path, caption="Emp NID Card", use_container_width=True) if os.path.exists(emp_nid_path) else st.caption("[ No NID Card ]")
-        st.markdown("<h4 style='color:#1f852c; margin-top:10px;'>📂 Family Information</h4>", unsafe_allow_html=True)
+            with img_c1: 
+                if os.path.exists(emp_photo_path): st.image(emp_photo_path, caption="Emp Photo", use_container_width=True)
+                else: st.markdown(render_no_image_frame("Emp Photo"), unsafe_allow_html=True)
+            with img_c2: 
+                if os.path.exists(emp_nid_path): st.image(emp_nid_path, caption="Emp NID Card", use_container_width=True)
+                else: st.markdown(render_no_image_frame("Emp NID"), unsafe_allow_html=True)
+                
+        st.markdown("<h4 style='color:#10b981; margin-top:10px;'>📂 Family Information</h4>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1: st.markdown(f"**Father's Name:** {father_name or '-'}")
         with c2: st.markdown(f"**Mother's Name:** {mother_name or '-'}"); st.markdown(f"**Father's NID:** {father_nid or '-'}")
-        st.markdown("<h4 style='color:#1f852c; margin-top:10px;'>🛡️ Guarantor Details & Documents</h4>", unsafe_allow_html=True)
+        
+        st.markdown("<h4 style='color:#10b981; margin-top:10px;'>🛡️ Guarantor Details & Documents</h4>", unsafe_allow_html=True)
         g_col1, g_col2 = st.columns([4.5, 2.5])
         with g_col1:
             st.markdown(f"**Guarantor Name:** {guarantor_name or '-'}")
@@ -351,8 +294,13 @@ def show_employee_details(emp_id, company):
             st.markdown(f"**Guarantor Mobile:** {guarantor_mobile or '-'}")
         with g_col2:
             g_img_c1, g_img_c2 = st.columns(2)
-            with g_img_c1: st.image(guar_photo_path, caption="Guar Photo", use_container_width=True) if os.path.exists(guar_photo_path) else st.caption("[ No Photo ]")
-            with g_img_c2: st.image(guar_nid_path, caption="Guar NID Card", use_container_width=True) if os.path.exists(guar_nid_path) else st.caption("[ No NID Card ]")
+            with g_img_c1: 
+                if os.path.exists(guar_photo_path): st.image(guar_photo_path, caption="Guar Photo", use_container_width=True)
+                else: st.markdown(render_no_image_frame("Guar Photo"), unsafe_allow_html=True)
+            with g_img_c2: 
+                if os.path.exists(guar_nid_path): st.image(guar_nid_path, caption="Guar NID Card", use_container_width=True)
+                else: st.markdown(render_no_image_frame("Guar NID"), unsafe_allow_html=True)
+                
         st.markdown("<br>", unsafe_allow_html=True)
         st.success(f"**Salary Structure:** Basic: {basic_salary:,.1f} ৳ | Variable: {variable_salary:,.1f} ৳ | **Total Salary: {total_salary:,.1f} ৳**")
     else:
@@ -404,7 +352,7 @@ def show_employee_details(emp_id, company):
                     import time; time.sleep(0.5); st.rerun()
 
 # ==============================================================================
-# ৭. সাইডবার ন্যাভিগেশন মেনু
+# 💈 সাইডবার ন্যাভিগেশন মেনু
 # ==============================================================================
 st.sidebar.markdown("## Main Menu")
 user_role = st.session_state.get('user_role', None)
@@ -466,7 +414,7 @@ current_action = st.session_state.get('current_action', None)
 current_company = st.session_state.get('current_company', None)
 
 # ==============================================================================
-# ৮. অ্যাকশন এক্সিকিউশন লজিক (Main Body Router)
+# 🚀 অ্যাকশন এক্সিকিউশন লজিক (Main Body Router)
 # ==============================================================================
 render_header()
 
@@ -476,7 +424,7 @@ if current_action is None:
 
 elif current_action == "Add New Employee":
     st.markdown(f"### 👥 Add New Employee ({current_company})")
-    design_options = ["DM", "Supervisor", "SE", "ITBS", "Accountant", "Peon", "Other"] if current_company == "GP" else ["GM", "D&M", "F&A", "DCO", "DSS", "DSO", "Security Gurd", "Peon", "Cleaner", "Other"]
+    design_options = ["DM", "Supervisor", "SE", "ITBS", "Accountant", "Peon", "Other"] if current_company == "GP" else ["GM", "D&M", "F&A", "DCO", "DSS", "SR", "Other"]
     with st.form(f"employee_form_{current_company.lower()}_v10", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
@@ -620,7 +568,7 @@ elif current_action == "Cash Management":
             st.dataframe(tx_df, use_container_width=True, hide_index=True)
 
 # ==============================================================================
-# লজিক: Expense Management মডিউল (টপ-হেডার এক্সেল আপলোড ও ফুল-উইডথ ম্যানুয়াল গ্রিড)
+# লজিক: Expense Management মডিউল 
 # ==============================================================================
 elif current_action == "Expense Management":
     st.markdown(f"### 📉 Expense Management Module ({current_company})")
