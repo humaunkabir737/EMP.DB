@@ -579,7 +579,7 @@ if user_role == "admin":
         st.write("Password reset features here...")
 
 st.sidebar.markdown("---")
-
+current_action = st.session_state.get('current_action', None)
 # ==============================================================================
 # ৮. অ্যাকশন এক্সিকিউশন লজিক (Main Body Router)
 # ==============================================================================
