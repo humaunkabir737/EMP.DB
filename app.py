@@ -220,7 +220,7 @@ def show_second_party_details(party_id):
             new_p_c2 = st.text_input("Comments 02", value=p_c2)
             new_p_status = st.selectbox("Status", ["Active", "Inactive"], index=0 if p_status == "Active" else 1)
             if st.form_submit_button("💾 Save Changes", use_container_width=True):
-                if not new_p_name.strip(): st.error("Second Party Name خالی রাখা যাবে না!")
+                if not new_p_name.strip(): st.error("Second Party Name খালি রাখা যাবে না!")
                 else:
                     try:
                         conn = sqlite3.connect(DB_NAME); cursor = conn.cursor()
@@ -234,7 +234,7 @@ def show_second_party_details(party_id):
                         st.error("এই কোম্পানির আন্ডারে এই নামের আরেকটি সেকেন্ড পার্টি ইতিমধ্যে ডাটাবেজে বিদ্যমান!")
 
 # ==============================================================================
-# 🔍 কর্মচারীর প্রোফাইল ডিটেইলস ডায়ালগ (এখানেই ডিজিটাল ফ্রেম ফিক্স করা হয়েছে)
+# 🔍 কর্মচারীর প্রোফাইল ডিটেইলস ডায়ালগ (বারবার পপআপ আসার বাগটি এখানে ফিক্সড)
 # ==============================================================================
 @st.dialog("Employee Profile Details", width="large")
 def show_employee_details(emp_id, company):
@@ -245,8 +245,12 @@ def show_employee_details(emp_id, company):
         FROM employees WHERE emp_id = ? AND company = ?
     """, (emp_id, company))
     emp = cursor.fetchone(); conn.close()
+    
     if not emp:
-        st.error("Employee not found!"); st.session_state.active_emp_id = None; return
+        st.error("Employee not found!")
+        st.session_state.active_emp_id = None
+        return
+        
     (emp_id, name, designation, mobile, alt_contact, join_date, basic_salary, variable_salary, total_salary,
      father_name, father_nid, mother_name, emp_nid, guarantor_name, guarantor_nid, guarantor_mobile) = emp
     
@@ -256,7 +260,9 @@ def show_employee_details(emp_id, company):
         else: st.button("⬅️ Back to View Mode", type="secondary", key="popup_back_btn", on_click=close_edit_mode)
     with col_t2:
         if st.button("❌ Close Window", use_container_width=True, key="popup_close_btn"):
-            st.session_state.active_emp_id = None; st.session_state.dialog_edit_mode = False; st.rerun()
+            st.session_state.active_emp_id = None 
+            st.session_state.dialog_edit_mode = False
+            st.rerun()
     st.markdown("---")
     
     emp_photo_path = os.path.join(PHOTO_DIR, f"{emp_id}_emp.png")
@@ -348,7 +354,8 @@ def show_employee_details(emp_id, company):
                           (new_f_name or "").strip(), (new_f_nid or "").strip(), (new_m_name or "").strip(), (new_emp_nid or "").strip(), (new_g_name or "").strip(), (new_g_nid or "").strip(), (new_g_mob or "").strip(), emp_id, company))
                     conn.commit(); conn.close()
                     st.toast("কর্মীর তথ্য সফলভাবে আপডেট করা হয়েছে!", icon="✅")
-                    st.session_state.active_emp_id = None; st.session_state.dialog_edit_mode = False
+                    st.session_state.active_emp_id = None 
+                    st.session_state.dialog_edit_mode = False
                     import time; time.sleep(0.5); st.rerun()
 
 # ==============================================================================
@@ -419,7 +426,7 @@ current_company = st.session_state.get('current_company', None)
 render_header()
 
 if current_action is None:
-    st.markdown("<h3 style='text-align: center; color: #10b981;'>ড্যাশবোর্ড সিস্টেমে আপনাকে স্বাগতম!</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #10b981;'>ড্যাশবোর্ড系统中 আপনাকে স্বাগতম!</h3>", unsafe_allow_html=True)
     st.info("💡 কাজ শুরু করতে বাম পাশের সাইডবার মেনু থেকে কোম্পানির নির্দিষ্ট ফোল্ডার এক্সপ্যান্ড করে কাঙ্ক্ষিত অপশনটি সিলেক্ট করুন।")
 
 elif current_action == "Add New Employee":
@@ -502,7 +509,8 @@ elif current_action == "View All Employee":
             c2.markdown(f"**{row['নাম']}** ({row['পদবী']})")
             c3.markdown(f"📞 {row['মোবাইল'] or '-'}")
             if c4.button("👁️ View Profile", key=f"v_emp_{row['ID']}"):
-                st.session_state.active_emp_id = row['ID']; st.rerun()
+                st.session_state.active_emp_id = row['ID']
+                st.rerun()
 
 elif current_action == "Add New Second Party":
     st.markdown(f"### 👥 Add New Second Party Account ({current_company})")
@@ -568,7 +576,7 @@ elif current_action == "Cash Management":
             st.dataframe(tx_df, use_container_width=True, hide_index=True)
 
 # ==============================================================================
-# লজিক: Expense Management মডিউল 
+# লজিক: Expense Management মডিউল (Sub Category ড্রপডাউন সহ রিফ্যাক্টর্ড)
 # ==============================================================================
 elif current_action == "Expense Management":
     st.markdown(f"### 📉 Expense Management Module ({current_company})")
@@ -589,9 +597,10 @@ elif current_action == "Expense Management":
         with top_c4:
             st.markdown("<div style='padding-top: 24px;'></div>", unsafe_allow_html=True)
             exp_buffer = io.BytesIO()
-            exp_template_df = pd.DataFrame(columns=["date", "expense_type", "expense_category", "amount", "remarks"])
-            exp_template_df.loc[0] = [str(datetime.now().date()), "ROI_Expences", "Electricity_Bill", 1500.0, "Sample Office Bill"]
-            exp_template_df.loc[1] = [str(datetime.now().date()), "Expences", "Entertainment", 350.0, "Guest Tea & Snacks"]
+            # এক্সেল টেমপ্লেটেও sub_category কলাম যুক্ত করা হয়েছে
+            exp_template_df = pd.DataFrame(columns=["date", "expense_type", "expense_category", "sub_category", "amount", "remarks"])
+            exp_template_df.loc[0] = [str(datetime.now().date()), "ROI_Expences", "Electricity_Bill", "Electricity_Bill", 1500.0, "Sample Office Bill"]
+            exp_template_df.loc[1] = [str(datetime.now().date()), "Expences", "Entertainment", "Entertainment", 350.0, "Guest Tea & Snacks"]
             with pd.ExcelWriter(exp_buffer, engine='openpyxl') as writer:
                 exp_template_df.to_excel(writer, index=False, sheet_name='Expense_Template')
             st.download_button("📥 ডাউনলোড টেমপ্লেট", data=exp_buffer.getvalue(), file_name=f"{current_company}_expense_template.xlsx", use_container_width=True)
@@ -608,11 +617,12 @@ elif current_action == "Expense Management":
                         r_date = str(row.get('date', datetime.now().date())).split(" ")[0]
                         r_type = str(row.get('expense_type', '')).strip()
                         r_cat = str(row.get('expense_category', '')).strip()
+                        r_subcat = str(row.get('sub_category', r_cat)).strip() # এক্সেল থেকে সাবক্যাট রিড
                         r_amt = float(row['amount']) if pd.notnull(row['amount']) else 0.0
                         r_rem = str(row.get('remarks', '')).strip() if pd.notnull(row.get('remarks', '')) else ""
                         
                         if r_type not in ['nan', 'None', ''] and r_cat not in ['nan', 'None', ''] and r_amt > 0:
-                            formatted_remarks = f"[{r_type} -> {r_cat}] {r_rem}".strip()
+                            formatted_remarks = f"[{r_type} -> {r_cat} -> {r_subcat}] {r_rem}".strip()
                             cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, 'Petty_Cash', 'Cash Out', ?, ?)", 
                                            (r_date, current_company, r_amt, formatted_remarks))
                             count += 1
@@ -622,7 +632,7 @@ elif current_action == "Expense Management":
             except Exception as e: st.error(f"এক্সেল প্রসেস করতে সমস্যা হয়েছে: {e}")
 
         st.markdown("---")
-        st.markdown("##### 📝 ম্যানুয়াল মাল্টি-রো এন্ট্রি (ফুল-উইডথ স্পেস)")
+        st.markdown("##### 📝 ম্যানুয়াল মাল্টি-রো এন্ট্রি (নতুন Sub Category কলাম সহ)")
         
         categories_map = {
             "": [""],
@@ -631,27 +641,39 @@ elif current_action == "Expense Management":
             "Merchant": ["", "Entertainment", "Repair", "T.A", "Printing", "Campaign", "Cash_Pay", "Stationary", "Others"]
         }
         
-        h1, h2, h3, h4 = st.columns([2.5, 3.5, 2, 4])
-        h1.markdown("**Expense Type**", unsafe_allow_html=True)
-        h2.markdown("**খাত (Expense Category)**", unsafe_allow_html=True)
-        h3.markdown("**পরিমাণ (Amount ৳)**", unsafe_allow_html=True)
-        h4.markdown("**বিস্তারিত বিবরণ (Remarks)**", unsafe_allow_html=True)
+        # ৪টি কলামের জায়গায় এখন সুষম ৫টি কলাম লেআউট
+        h1, h2, h3, h4, h5 = st.columns([2, 2.5, 2.5, 1.5, 3.5])
+        h1.markdown("**Expense Type**")
+        h2.markdown("**খাত (Expense Category)**")
+        h3.markdown("**Sub Category**")
+        h4.markdown("**পরিমাণ (Amount ৳)**")
+        h5.markdown("**বিবরণ (Remarks)**")
         
         expense_rows_data = []
         for i in range(int(num_rows)):
-            c1, c2, c3, c4 = st.columns([2.5, 3.5, 2, 4])
-            with c1: exp_type = st.selectbox(f"Type_{i}", ["", "ROI_Expences", "Expences", "Merchant"], key=f"exp_type_{i}", label_visibility="collapsed")
-            with c2: exp_cat = st.selectbox(f"Cat_{i}", categories_map.get(exp_type, [""]), key=f"exp_cat_{i}", label_visibility="collapsed")
-            with c3: amt = st.number_input(f"Amt_{i}", min_value=0.0, step=50.0, value=None, key=f"exp_amt_{i}", label_visibility="collapsed")
-            with c4: rem = st.text_input(f"Rem_{i}", value="", key=f"exp_rem_{i}", label_visibility="collapsed", placeholder="এখানে লিখুন...")
-            expense_rows_data.append((exp_type, exp_cat, amt, rem))
+            c1, c2, c3, c4, c5 = st.columns([2, 2.5, 2.5, 1.5, 3.5])
+            with c1: 
+                exp_type = st.selectbox(f"Type_{i}", ["", "ROI_Expences", "Expences", "Merchant"], key=f"exp_type_{i}", label_visibility="collapsed")
+            with c2: 
+                exp_cat = st.selectbox(f"Cat_{i}", categories_map.get(exp_type, [""]), key=f"exp_cat_{i}", label_visibility="collapsed")
+            with c3: 
+                # আপনার শর্ত অনুযায়ী Category-তে যা সিলেক্ট হবে সাব-ক্যাটাগরিতে তাই অপশন দেখাবে
+                sub_options = [""] if exp_cat == "" else [exp_cat]
+                exp_subcat = st.selectbox(f"SubCat_{i}", sub_options, key=f"exp_subcat_{i}", label_visibility="collapsed")
+            with c4: 
+                amt = st.number_input(f"Amt_{i}", min_value=0.0, step=50.0, value=None, key=f"exp_amt_{i}", label_visibility="collapsed")
+            with c5: 
+                rem = st.text_input(f"Rem_{i}", value="", key=f"exp_rem_{i}", label_visibility="collapsed", placeholder="বিস্তারিত...")
+                
+            expense_rows_data.append((exp_type, exp_cat, exp_subcat, amt, rem))
             
         st.markdown("---")
         if st.button("💾 সকল ম্যানুয়াল খরচ একসাথে সাবমিট করুন", type="primary", use_container_width=True):
             valid_entries = 0; conn = sqlite3.connect(DB_NAME); cursor = conn.cursor()
-            for etype, ecat, eamt, erem in expense_rows_data:
+            for etype, ecat, esubcat, eamt, erem in expense_rows_data:
                 if etype != "" and ecat != "" and eamt is not None and eamt > 0:
-                    formatted_remarks = f"[{etype} -> {ecat}] {erem}".strip()
+                    # রিমার্কস ফিল্ডে সাব-ক্যাটাগরি ট্র্যাকিং যুক্ত করা হলো
+                    formatted_remarks = f"[{etype} -> {ecat} -> {esubcat}] {erem}".strip()
                     cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, 'Petty_Cash', 'Cash Out', ?, ?)", 
                                    (str(exp_date), current_company, eamt, formatted_remarks))
                     valid_entries += 1
@@ -681,6 +703,8 @@ elif current_action == "Others":
 # ==============================================================================
 if st.session_state.active_emp_id:
     show_employee_details(st.session_state.active_emp_id, st.session_state.current_company)
+    # পপআপ থেকে ব্যাক করার সময় বা ক্লোজ হওয়ার সময় ডায়ালগ ফাংশন শেষ হলে সেফটি রিবুট ট্রিকার
+    st.session_state.active_emp_id = None
 
 if st.session_state.active_party_id:
     show_second_party_details(st.session_state.active_party_id)
