@@ -82,7 +82,7 @@ GUAR_PHOTO_DIR = os.path.join(BASE_DIR, "guarantor_photos")
 GUAR_NID_DIR = os.path.join(BASE_DIR, "guarantor_nids")
 
 # ==============================================================================
-# ৩. ডাটাবেজ এবং কলাম মাইগ্রেশন লজিক
+# ৩. ডাটাবেজ এবং অ্যাডভান্সড মাইগ্রেশন লজিক (Error Resolution)
 # ==============================================================================
 def init_db():
     for folder in [UPLOAD_DIR, IMAGE_DIR, PHOTO_DIR, EMP_NID_DIR, GUAR_PHOTO_DIR, GUAR_NID_DIR]:
@@ -115,22 +115,67 @@ def init_db():
         )
     ''')
     
-    # সেকেন্ড পার্টি টেবিল (নতুন status কলামসহ তৈরি হবে)
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS second_parties (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            party_name TEXT UNIQUE NOT NULL, 
-            contact_number TEXT, 
-            comments_01 TEXT, 
-            comments_02 TEXT,
-            status TEXT DEFAULT 'Active'
-        )
-    ''')
+    # 🚨 সেকেন্ড পার্টি টেবিল মাইগ্রেশন কন্ট্রোল (কোম্পানি পৃথকীকরণ ও এরর ফিক্স)
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='second_parties'")
+    table_exists = cursor.fetchone()
     
-    # ডিফল্ট সেকেন্ড পার্টি ডেটা ইনসার্ট
+    if table_exists:
+        cursor.execute("PRAGMA table_info(second_parties)")
+        existing_sp_columns = [col[1] for col in cursor.fetchall()]
+        
+        # যদি 'company' কলামটি না থাকে, তার মানে এটি পুরনো কাঠামোর টেবিল। একে রূপান্তর করতে হবে।
+        if 'company' not in existing_sp_columns:
+            has_status = 'status' in existing_sp_columns
+            
+            # ব্যাকআপ নেওয়া ও নতুন টেবিল তৈরি
+            cursor.execute("ALTER TABLE second_parties RENAME TO old_second_parties")
+            cursor.execute('''
+                CREATE TABLE second_parties (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                    company TEXT NOT NULL,
+                    party_name TEXT NOT NULL, 
+                    contact_number TEXT, 
+                    comments_01 TEXT, 
+                    comments_02 TEXT,
+                    status TEXT DEFAULT 'Active',
+                    UNIQUE(company, party_name)
+                )
+            ''')
+            
+            # পুরনো ডেটাগুলোকে ডিফল্ট 'bKash' হিসেবে নতুন টেবিলে কপি করা
+            if has_status:
+                cursor.execute('''
+                    INSERT INTO second_parties (id, company, party_name, contact_number, comments_01, comments_02, status)
+                    SELECT id, 'bKash', party_name, contact_number, comments_01, comments_02, IFNULL(status, 'Active') FROM old_second_parties
+                ''')
+            else:
+                cursor.execute('''
+                    INSERT INTO second_parties (company, party_name, contact_number, comments_01, comments_02, status)
+                    SELECT 'bKash', party_name, contact_number, comments_01, comments_02, 'Active' FROM old_second_parties
+                ''')
+            cursor.execute("DROP TABLE old_second_parties")
+    else:
+        # একদম ফ্রেশ ডাটাবেজ হলে টেবিল তৈরি করার স্ট্রাকচার
+        cursor.execute('''
+            CREATE TABLE second_parties (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                company TEXT NOT NULL,
+                party_name TEXT NOT NULL, 
+                contact_number TEXT, 
+                comments_01 TEXT, 
+                comments_02 TEXT,
+                status TEXT DEFAULT 'Active',
+                UNIQUE(company, party_name)
+            )
+        ''')
+    
+    # 🎯 ডিফল্ট সেকেন্ড পার্টি ডেটা ইনসার্ট (শুধুমাত্র bKash কোম্পানির জন্য এক্সক্লুসিভ)
     default_parties = ["Mother_Wallet", "Hand_Cash", "Petty_Cash", "Bank", "BGP", "Dulal", "Shafayat", "Madina", "Owner", "GAS", "Auto_Rice", "Others", "bKash", "Commission", "Al_Arafa", "Rekit", "DMCBL", "Kabita_Mami", "Ashim_Da", "Al_Amin"]
     for party in default_parties:
-        cursor.execute("INSERT OR IGNORE INTO second_parties (party_name, contact_number, comments_01, comments_02, status) VALUES (?, '', '', '', 'Active')", (party,))
+        cursor.execute("""
+            INSERT OR IGNORE INTO second_parties (company, party_name, contact_number, comments_01, comments_02, status) 
+            VALUES ('bKash', ?, '', '', '', 'Active')
+        """, (party,))
     
     # ক্যাশ ট্রানজেকশন (ক্যাশ খাতা) টেবিল
     cursor.execute('''
@@ -164,12 +209,6 @@ def init_db():
         if col_name not in existing_columns:
             cursor.execute(f"ALTER TABLE employees ADD COLUMN {col_name} {col_type}")
             
-    # সেকেন্ড পার্টি টেবিলের নতুন কলাম মাইগ্রেশন চেক (status কলামের জন্য)
-    cursor.execute("PRAGMA table_info(second_parties)")
-    sp_existing_columns = [col[1] for col in cursor.fetchall()]
-    if 'status' not in sp_existing_columns:
-        cursor.execute("ALTER TABLE second_parties ADD COLUMN status TEXT DEFAULT 'Active'")
-            
     conn.commit()
     conn.close()
 
@@ -190,7 +229,6 @@ if 'active_emp_id' not in st.session_state:
 if 'dialog_edit_mode' not in st.session_state:
     st.session_state.dialog_edit_mode = False
 
-# সেকেন্ড পার্টির পপ-আপের জন্য অতিরিক্ত সেশন স্টেট
 if 'active_party_id' not in st.session_state:
     st.session_state.active_party_id = None
 
@@ -239,7 +277,7 @@ def render_header():
         """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 🔍 সেকেন্ড পার্টির প্রোফাইল ডিটেইলস ও এডিট ডায়ালগ (NEW FEATURE)
+# 🔍 সেকেন্ড পার্টির প্রোফাইল ডিটেইলস ও এডিট ডায়ালগ
 # ==============================================================================
 @st.dialog("Second Party Details", width="medium")
 def show_second_party_details(party_id):
@@ -318,7 +356,7 @@ def show_second_party_details(party_id):
                         time.sleep(0.5)
                         st.rerun()
                     except sqlite3.IntegrityError:
-                        st.error("এই নামের আরেকটি সেকেন্ড পার্টি ইতিমধ্যে ডাটাবেজে বিদ্যমান!")
+                        st.error("এই কোম্পানির আন্ডারে এই নামের আরেকটি সেকেন্ড পার্টি ইতিমধ্যে ডাটাবেজে বিদ্যমান!")
 
 # ==============================================================================
 # ৬. কর্মচারীর প্রোফাইল ডিটেইলস ডায়ালগ
@@ -357,6 +395,7 @@ def show_employee_details(emp_id, company):
             
     st.markdown("---")
     
+    img_folders = [PHOTO_DIR, EMP_NID_DIR, GUAR_PHOTO_DIR, GUAR_NID_DIR]
     emp_photo_path = os.path.join(PHOTO_DIR, f"{emp_id}_emp.png")
     emp_nid_path = os.path.join(EMP_NID_DIR, f"{emp_id}_nid.png")
     guar_photo_path = os.path.join(GUAR_PHOTO_DIR, f"{emp_id}_guar.png")
@@ -544,7 +583,7 @@ def show_employee_details(emp_id, company):
                     st.rerun()
 
 # ==============================================================================
-# ৭. সাইডবার ন্যাভিগেশন মেনু (রোল অনুযায়ী কঠোর ফিল্টারিং)
+# ৭. সাইডবার ন্যাভিগেশন মেনু (রোল অনুযায়ী ফিল্টারিং)
 # ==============================================================================
 st.sidebar.markdown("## Main Menu")
 user_role = st.session_state.get('user_role', None)
@@ -562,7 +601,7 @@ st.sidebar.markdown("<hr style='margin: 10px 0px; border-color: #444;'>", unsafe
 menu_options_emp = ["Add New Employee", "Add Employee By Upload", "View All Employee"]
 
 # ------------------------------------------------------------------------------
-# ১. 📁 bKash মেইন ফোল্ডার (শুধু admin এবং bKash_User দেখতে পাবে)
+# ১. 📁 bKash মেইন ফোল্ডার
 # ------------------------------------------------------------------------------
 if user_role in ["admin", "bKash_User"]:
     with st.sidebar.expander("📁 bKash", expanded=(st.session_state.get('current_company') == "bKash")):
@@ -604,7 +643,7 @@ if user_role in ["admin", "bKash_User"]:
                 st.rerun()
 
 # ------------------------------------------------------------------------------
-# ২. 📁 GP মেইন ফোল্ডার (শুধু admin এবং GP_User দেখতে পাবে)
+# ২. 📁 GP মেইন ফোল্ডার
 # ------------------------------------------------------------------------------
 if user_role in ["admin", "GP_User"]:
     with st.sidebar.expander("📁 GP", expanded=(st.session_state.get('current_company') == "GP")):
@@ -645,9 +684,6 @@ if user_role in ["admin", "GP_User"]:
                 st.session_state.current_action = "Others"
                 st.rerun()
 
-# ------------------------------------------------------------------------------
-# ৩. 📁 Others মেইন ফোল্ডার (🚨 শুধু admin দেখতে পাবে)
-# ------------------------------------------------------------------------------
 if user_role == "admin":
     with st.sidebar.expander("📁 Others", expanded=False):
         if st.button("📁 Others Account", key="main_oth_btn", use_container_width=True):
@@ -655,36 +691,18 @@ if user_role == "admin":
             st.session_state.current_action = "Others"
             st.rerun()
 
-# ------------------------------------------------------------------------------
-# ৪. ⚙️ পাসওয়ার্ড রিসেট প্যানেল (🚨 শুধু admin দেখতে পাবে)
-# ------------------------------------------------------------------------------
-if user_role == "admin":
-    with st.sidebar.expander("⚙️ পাসওয়ার্ড রিসেট প্যানেল (Admin)", expanded=False):
-        st.write("Password reset features here...")
-
 st.sidebar.markdown("---")
 current_action = st.session_state.get('current_action', None)
+current_company = st.session_state.get('current_company', None)
 
 # ==============================================================================
 # ৮. অ্যাকশন এক্সিকিউশন লজিক (Main Body Router)
 # ==============================================================================
 if current_action is None:
-    user_role = st.session_state.get('user_role', None)
-current_company = st.session_state.get('current_company', None)
-
-if st.session_state.get('current_company') == "bKash" and st.session_state.get('user_role') not in ["admin", "bKash_User"]:
-    st.error("❌ এই সেকশনটি দেখার অনুমতি আপনার নেই!")
-    st.stop()
-
-if st.session_state.get('current_company') == "GP" and st.session_state.get('user_role') not in ["admin", "GP_User"]:
-    st.error("❌ এই সেকশনটি দেখার অনুমতি আপনার নেই!")
-    st.stop()
-
-if current_action is None:
     st.markdown("<h2 style='text-align: center; font-family: \"Times New Roman\", serif; font-weight: bold;'>M/S JABED ENTERPRISE</h2>", unsafe_allow_html=True)
-    st.markdown("<h4 style='text-align: center; color: #a0a0a0;'>ড্যাশবোর্ড系统中 আপনাকে স্বাগতম!</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center; color: #a0a0a0;'>ড্যাশবোর্ড সিস্টেমে আপনাকে স্বাগতম!</h4>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
-    st.info("💡 কাজ শুরু করতে বাম পাশের সাইডবার মেনু থেকে কোম্পানির নির্দিষ্ট ফোল্ডার এক্সপ্যান্ড করে কাঙ্ঞ্চিত অপশনটি সিলেক্ট করুন।")
+    st.info("💡 কাজ শুরু করতে বাম পাশের সাইডবার মেনু থেকে কোম্পানির নির্দিষ্ট ফোল্ডার এক্সপ্যান্ড করে কাঙ্ক্ষিত অপশনটি সিলেক্ট করুন।")
 
 # --- Employee Management Actions ---
 elif current_action == "Add New Employee":
@@ -696,13 +714,11 @@ elif current_action == "Add New Employee":
         design_options = ["GM", "D&M", "F&A", "DCO", "DSS", "DSO", "Security Gurd", "Peon", "Cleaner", "Other"]
         select_key = "bkash_designation_select"
     
-    form_key = f"employee_form_{current_company.lower()}_v10"
-    
-    with st.form(form_key, clear_on_submit=True):
+    with st.form(f"employee_form_{current_company.lower()}_v10", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("##### 🔑 Basic & Contact Info")
-            emp_id = st.text_input("Employee ID (e.g., EMP-101) *", key=f"emp_id_{current_company}")
+            emp_id = st.text_input("Employee ID *", key=f"emp_id_{current_company}")
             name = st.text_input("Name *", key=f"name_{current_company}")
             designation = st.selectbox("Designation", options=design_options, key=select_key)
             mobile = st.text_input("Mobile")
@@ -823,7 +839,7 @@ elif current_action == "Add Employee By Upload":
 
 elif current_action == "View All Employee":
     st.markdown(f"### 📋 All Employees Database ({current_company})")
-    search_query = st.text_input("🔍 Search Employee by Name / ID / Mobile / NID:")
+    search_query = st.text_input("🔍 Search Employee by Name / ID / Mobile:")
     
     try:
         conn = sqlite3.connect(DB_NAME)
@@ -834,13 +850,9 @@ elif current_action == "View All Employee":
         if not df.empty:
             if search_query:
                 q = search_query.lower()
-                df = df[df['name'].str.lower().str.contains(q) | df['emp_id'].str.lower().str.contains(q) | df['mobile'].str.contains(q) | df['emp_nid'].str.contains(q)]
+                df = df[df['name'].str.lower().str.contains(q) | df['emp_id'].str.lower().str.contains(q) | df['mobile'].str.contains(q)]
             
-            st.markdown("""
-                <style>
-                .grid-header { font-weight: bold; padding: 6px; background-color: #262730; border-radius: 4px; text-align: left; }
-                </style>
-            """, unsafe_allow_html=True)
+            st.markdown("<style>.grid-header { font-weight: bold; padding: 6px; background-color: #262730; border-radius: 4px; }</style>", unsafe_allow_html=True)
             
             h_col0, h_col1, h_col2, h_col3, h_col4, h_col5 = st.columns([0.6, 1.3, 2.2, 1.2, 1.6, 1.6])
             h_col0.markdown("<div class='grid-header'>View</div>", unsafe_allow_html=True)
@@ -864,17 +876,15 @@ elif current_action == "View All Employee":
                 r_col4.write(row['mobile'] if row['mobile'] else "-")
                 r_col5.write(f"**{row['total_salary']:,.1f} ৳**")
                 st.markdown("<hr style='margin: 2px 0px; border-color: #222;'>", unsafe_allow_html=True)
-                
-            st.markdown(f"<br>**সর্বমোট স্টাফ সংখ্যা ({current_company}):** `{len(df)} জন`", unsafe_allow_html=True)
         else:
             st.info(f"বর্তমানে {current_company} ডেটাবেজে কোনো কর্মীর তথ্য সংরক্ষিত নেই।")
     except Exception as e:
         st.error(f"ডাটা লোড করার সময় সমস্যা হয়েছে: {e}")
 
-# --- 👥 Second Party Management ---
+# --- 👥 Second Party Management (কোম্পানি ভিত্তিক স্বতন্ত্র লজিক) ---
 elif current_action == "Add New Second Party":
     st.markdown(f"### 👥 Add New Second Party ({current_company})")
-    st.markdown("নতুন কোনো এজেন্ট, ডিলার বা অ্যাকাউন্টস লেজারের জন্য সেকেন্ড পার্টি নাম এখানেযুক্ত করুন।")
+    st.markdown(f"বর্তমানে আপনি **{current_company}**-এর অধীনে নতুন একজন সেকেন্ড পার্টি যুক্ত করছেন।")
     
     with st.form("add_second_party_form", clear_on_submit=True):
         p_name = st.text_input("সেকেন্ড পার্টির নাম (Second Party Name) *")
@@ -890,29 +900,31 @@ elif current_action == "Add New Second Party":
                 try:
                     conn = sqlite3.connect(DB_NAME)
                     cursor = conn.cursor()
+                    # 🎯 কারেন্ট সিলেক্টেড কোম্পানির প্যারামিটার পাস হচ্ছে
                     cursor.execute("""
-                        INSERT INTO second_parties (party_name, contact_number, comments_01, comments_02, status)
-                        VALUES (?, ?, ?, ?, 'Active')
-                    """, (p_name.strip(), p_contact.strip(), p_comment1.strip(), p_comment2.strip()))
+                        INSERT INTO second_parties (company, party_name, contact_number, comments_01, comments_02, status)
+                        VALUES (?, ?, ?, ?, ?, 'Active')
+                    """, (current_company, p_name.strip(), p_contact.strip(), p_comment1.strip(), p_comment2.strip()))
                     conn.commit()
                     conn.close()
-                    st.success(f"🎉 সফলভাবে '{p_name.strip()}' সেকেন্ড পার্টি হিসেবে ডাটাবেজে সংরক্ষিত হয়েছে!")
+                    st.success(f"🎉 সফলভাবে '{p_name.strip()}' সেকেন্ড পার্টিটি {current_company} তালিকায় সংরক্ষিত হয়েছে!")
                 except sqlite3.IntegrityError:
-                    st.error(f"⚠️ দুঃখিত! '{p_name.strip()}' নামে ইতিমধ্যে একটি সেকেন্ড পার্টি তৈরি করা আছে।")
+                    st.error(f"⚠️ দুঃখিত! {current_company}-তে '{p_name.strip()}' নামে ইতিমধ্যে একটি সেকেন্ড পার্টি তৈরি করা আছে।")
 
 elif current_action == "View All Second Parties":
     st.markdown(f"### 📋 All Second Parties List ({current_company})")
-    search_sp = st.text_input("🔍 সেকেন্ড পার্টি খুঁজুন (Search by Name or Contact):")
+    search_sp = st.text_input(f"🔍 {current_company} সেকেন্ড পার্টি খুঁজুন (Search by Name or Contact):")
     
     try:
         conn = sqlite3.connect(DB_NAME)
-        # 🚨 লজিক: Active থাকবে উপরে (০), Inactive থাকবে নিচে (১)। এরপর নামের ক্রমানুসারে সর্টিং।
+        # 🎯 শুধুমাত্র নির্দিষ্ট কোম্পানির ডেটা ফিল্টার এবং সর্টিং (Active সর্বদা উপরে)
         query = """
             SELECT id, party_name, contact_number, comments_01, comments_02, status 
             FROM second_parties 
+            WHERE company = ?
             ORDER BY CASE WHEN status = 'Active' THEN 0 ELSE 1 END, party_name ASC
         """
-        sp_df = pd.read_sql_query(query, conn)
+        sp_df = pd.read_sql_query(query, conn, params=(current_company,))
         conn.close()
         
         if not sp_df.empty:
@@ -920,13 +932,8 @@ elif current_action == "View All Second Parties":
                 q = search_sp.lower()
                 sp_df = sp_df[sp_df['party_name'].str.lower().str.contains(q) | sp_df['contact_number'].str.contains(q)]
                 
-            st.markdown("""
-                <style>
-                .sp-grid-header { font-weight: bold; padding: 6px; background-color: #262730; border-radius: 4px; text-align: left; }
-                </style>
-            """, unsafe_allow_html=True)
+            st.markdown("<style>.sp-grid-header { font-weight: bold; padding: 6px; background-color: #262730; border-radius: 4px; }</style>", unsafe_allow_html=True)
             
-            # টেবিল গ্রিড হেডার লেআউট
             h_col0, h_col1, h_col2, h_col3 = st.columns([0.8, 2.8, 2.4, 1.2])
             h_col0.markdown("<div class='sp-grid-header'>Action</div>", unsafe_allow_html=True)
             h_col1.markdown("<div class='sp-grid-header'>Second Party Name</div>", unsafe_allow_html=True)
@@ -934,11 +941,9 @@ elif current_action == "View All Second Parties":
             h_col3.markdown("<div class='sp-grid-header'>Status</div>", unsafe_allow_html=True)
             st.markdown("<hr style='margin: 4px 0px 10px 0px; border-color: #444;'>", unsafe_allow_html=True)
             
-            # রো গ্রিড ডেটা রেন্ডারিং
             for idx, row in sp_df.iterrows():
                 r_col0, r_col1, r_col2, r_col3 = st.columns([0.8, 2.8, 2.4, 1.2])
                 
-                # আপনার রিকোয়েস্ট অনুযায়ী নামের পাশে "👁️ View" বাটন
                 if r_col0.button("👁️ View", key=f"sp_view_btn_{row['id']}_{idx}", use_container_width=True):
                     st.session_state.active_party_id = row['id']
                     st.session_state.party_edit_mode = False
@@ -955,9 +960,9 @@ elif current_action == "View All Second Parties":
                     
                 st.markdown("<hr style='margin: 2px 0px; border-color: #222;'>", unsafe_allow_html=True)
                 
-            st.markdown(f"<br>**মোট রেজিস্টার্ড সেকেন্ড পার্টি সংখ্যা:** `{len(sp_df)} টি`")
+            st.markdown(f"<br>**{current_company} এর মোট রেজিস্টার্ড সেকেন্ড পার্টি সংখ্যা:** `{len(sp_df)} টি`")
         else:
-            st.info("বর্তমানে ডাটাবেজে কোনো সেকেন্ড পার্টির তথ্য নেই।")
+            st.info(f"বর্তমানে {current_company} তালিকায় কোনো সেকেন্ড পার্টির তথ্য নেই।")
     except Exception as e:
         st.error(f"ডাটা লোড করতে সমস্যা হয়েছে: {e}")
 
@@ -966,9 +971,9 @@ elif current_action == "Cash Management":
     st.markdown(f"### 💵 Cash Management ({current_company})")
     
     conn = sqlite3.connect(DB_NAME)
-    # ক্যাশ এন্ট্রির ড্রপডাউনে শুধুমাত্র Active সেকেন্ড পার্টিদের নাম দেখাবে
     cursor = conn.cursor()
-    cursor.execute("SELECT party_name FROM second_parties WHERE status = 'Active' OR status IS NULL")
+    # 🎯 ড্রপডাউনে শুধুমাত্র সংশ্লিষ্ট কোম্পানির Active পার্টনারদের নাম দেখাবে
+    cursor.execute("SELECT party_name FROM second_parties WHERE (status = 'Active' OR status IS NULL) AND company = ? ORDER BY party_name ASC", (current_company,))
     parties_list = [r[0] for r in cursor.fetchall()]
     conn.close()
     
@@ -981,7 +986,7 @@ elif current_action == "Cash Management":
             with f_col1:
                 cash_date = st.date_input("তারিখ (Date)", datetime.now().date())
                 cash_type = st.selectbox("লেনদেনের ধরন (Type)", ["Cash In", "Cash Out"])
-                cash_party = st.selectbox("সেকেন্ড পার্টি (Second Party)", parties_list)
+                cash_party = st.selectbox("সেকেন্ড পার্টি (Second Party)", parties_list if parties_list else ["None"])
             with f_col2:
                 cash_amount = st.number_input("পরিমাণ (Amount ৳)", min_value=0.0, step=500.0)
                 cash_remarks = st.text_area("মন্তব্য (Remarks)")
@@ -990,6 +995,8 @@ elif current_action == "Cash Management":
             if save_cash:
                 if cash_amount <= 0:
                     st.error("পরিমাণ অবশ্যই ০ টাকার বেশি হতে হবে!")
+                elif cash_party == "None":
+                    st.error("কোনো একটি সেকেন্ড পার্টি সিলেক্ট বা তৈরি করুন!")
                 else:
                     conn = sqlite3.connect(DB_NAME)
                     cursor = conn.cursor()
@@ -1006,16 +1013,14 @@ elif current_action == "Cash Management":
                     
     with t2:
         st.markdown("#### 📤 এক্সেল ফাইল আপলোডের মাধ্যমে বাল্ক এন্ট্রি")
-        
         cash_buffer = io.BytesIO()
         cash_template_df = pd.DataFrame(columns=["date", "second_party", "type", "amount", "remarks"])
-        cash_template_df.loc[0] = [str(datetime.now().date()), "Hand_Cash", "Cash In", 15000.0, "Sample Entry Remarks"]
-        cash_template_df.loc[1] = [str(datetime.now().date()), "Bank", "Cash Out", 5000.0, "Office Expense Cash Out"]
+        cash_template_df.loc[0] = [str(datetime.now().date()), "Hand_Cash" if current_company=="bKash" else "Sample_Party", "Cash In", 15000.0, "Sample Entry Remarks"]
         
         with pd.ExcelWriter(cash_buffer, engine='openpyxl') as writer:
             cash_template_df.to_excel(writer, index=False, sheet_name='Cash_Template')
             
-        st.download_button("📥 Download Cash Khata Excel Template", data=cash_buffer.getvalue(), file_name="cash_khata_template.xlsx")
+        st.download_button("📥 Download Cash Khata Excel Template", data=cash_buffer.getvalue(), file_name=f"{current_company}_cash_template.xlsx")
         st.markdown("---")
         
         uploaded_cash_file = st.file_uploader("ক্যাশ এক্সেল ফাইল (.xlsx) এখানে আপলোড দিন", type=["xlsx"])
@@ -1061,7 +1066,6 @@ elif current_action == "Cash Management":
                 
     with t3:
         st.markdown("#### 📖 Cash Khata (Daily Report & Ledger View)")
-        
         conn = sqlite3.connect(DB_NAME)
         tx_query = "SELECT date as 'তারিখ', second_party as 'সেকেন্ড পার্টি', type as 'ধরনের লেনদেন', amount as 'পরিমাণ (৳)', remarks as 'মন্তব্য' FROM cash_transactions WHERE company = ? ORDER BY date DESC, id DESC"
         tx_df = pd.read_sql_query(tx_query, conn, params=(current_company,))
@@ -1074,11 +1078,11 @@ elif current_action == "Cash Management":
             
             m1, m2, m3 = st.columns(3)
             m1.metric("মোট ক্যাশ ইন (Total Cash In)", f"{total_in:,.1f} ৳")
-            m2.metric("মোট ক্যাশアウト (Total Cash Out)", f"{total_out:,.1f} ৳")
+            m2.metric("মোট ক্যাশ আউট (Total Cash Out)", f"{total_out:,.1f} ৳")
             m3.metric("ক্লোজিং ব্যালেন্স (Closing Balance)", f"{closing_balance:,.1f} ৳")
             
             st.markdown("---")
-            search_p = st.text_input("🔍 সেকেন্ড পার্টি ফিল্টার করুন (Search by Second Party Name):")
+            search_p = st.text_input("🔍 সেকেন্ড পার্টি ফিল্টার করুন:")
             if search_p:
                 tx_df = tx_df[tx_df['সেকেন্ড পার্টি'].str.lower().str.contains(search_p.lower())]
                 
@@ -1095,11 +1099,10 @@ elif current_action == "Others":
     st.info("💡 অন্যান্য ফুটকর বা বিবিধ হিসাবসমূহের ডেটা এন্ট্রি এখানে থাকবে।")
 
 # ==============================================================================
-# ৯. গ্লোবাল একটিভ ডায়ালগ কন্ট্রোলার
+# ৯. গ্লোবাল একটিভ ডায়ালগ কন্ট্রোলার 
 # ==============================================================================
 if st.session_state.active_emp_id:
     show_employee_details(st.session_state.active_emp_id, st.session_state.current_company)
 
-# সেকেন্ড পার্টির গ্লোবাল ডায়ালগ কন্ট্রোলার ও ট্রিগার
 if st.session_state.active_party_id:
     show_second_party_details(st.session_state.active_party_id)
