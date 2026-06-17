@@ -115,21 +115,22 @@ def init_db():
         )
     ''')
     
-    # সেকেন্ড পার্টি টেবিল
+    # সেকেন্ড পার্টি টেবিল (নতুন status কলামসহ তৈরি হবে)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS second_parties (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
             party_name TEXT UNIQUE NOT NULL, 
             contact_number TEXT, 
             comments_01 TEXT, 
-            comments_02 TEXT
+            comments_02 TEXT,
+            status TEXT DEFAULT 'Active'
         )
     ''')
     
     # ডিফল্ট সেকেন্ড পার্টি ডেটা ইনসার্ট
     default_parties = ["Mother_Wallet", "Hand_Cash", "Petty_Cash", "Bank", "BGP", "Dulal", "Shafayat", "Madina", "Owner", "GAS", "Auto_Rice", "Others", "bKash", "Commission", "Al_Arafa", "Rekit", "DMCBL", "Kabita_Mami", "Ashim_Da", "Al_Amin"]
     for party in default_parties:
-        cursor.execute("INSERT OR IGNORE INTO second_parties (party_name, contact_number, comments_01, comments_02) VALUES (?, '', '', '')", (party,))
+        cursor.execute("INSERT OR IGNORE INTO second_parties (party_name, contact_number, comments_01, comments_02, status) VALUES (?, '', '', '', 'Active')", (party,))
     
     # ক্যাশ ট্রানজেকশন (ক্যাশ খাতা) টেবিল
     cursor.execute('''
@@ -163,6 +164,12 @@ def init_db():
         if col_name not in existing_columns:
             cursor.execute(f"ALTER TABLE employees ADD COLUMN {col_name} {col_type}")
             
+    # সেকেন্ড পার্টি টেবিলের নতুন কলাম মাইগ্রেশন চেক (status কলামের জন্য)
+    cursor.execute("PRAGMA table_info(second_parties)")
+    sp_existing_columns = [col[1] for col in cursor.fetchall()]
+    if 'status' not in sp_existing_columns:
+        cursor.execute("ALTER TABLE second_parties ADD COLUMN status TEXT DEFAULT 'Active'")
+            
     conn.commit()
     conn.close()
 
@@ -182,6 +189,13 @@ if 'active_emp_id' not in st.session_state:
 
 if 'dialog_edit_mode' not in st.session_state:
     st.session_state.dialog_edit_mode = False
+
+# সেকেন্ড পার্টির পপ-আপের জন্য অতিরিক্ত সেশন স্টেট
+if 'active_party_id' not in st.session_state:
+    st.session_state.active_party_id = None
+
+if 'party_edit_mode' not in st.session_state:
+    st.session_state.party_edit_mode = False
 
 def open_edit_mode():
     st.session_state.dialog_edit_mode = True
@@ -223,6 +237,88 @@ def render_header():
             </div>
             <hr style="border: 1px solid #10b981; margin-top: 15px; margin-bottom: 25px;">
         """, unsafe_allow_html=True)
+
+# ==============================================================================
+# 🔍 সেকেন্ড পার্টির প্রোফাইল ডিটেইলস ও এডিট ডায়ালগ (NEW FEATURE)
+# ==============================================================================
+@st.dialog("Second Party Details", width="medium")
+def show_second_party_details(party_id):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, party_name, contact_number, comments_01, comments_02, status FROM second_parties WHERE id = ?", (party_id,))
+    party = cursor.fetchone()
+    conn.close()
+    
+    if not party:
+        st.error("Second Party not found!")
+        st.session_state.active_party_id = None
+        return
+        
+    p_id, p_name, p_contact, p_c1, p_c2, p_status = party
+    if p_status is None:
+        p_status = "Active"
+        
+    col_t1, col_t2 = st.columns([6, 2])
+    with col_t1:
+        if not st.session_state.party_edit_mode:
+            if st.button("✏️ Edit", key="sp_edit_toggle_btn"):
+                st.session_state.party_edit_mode = True
+                st.rerun()
+        else:
+            if st.button("⬅️ Back to View", key="sp_view_toggle_btn"):
+                st.session_state.party_edit_mode = False
+                st.rerun()
+    with col_t2:
+        if st.button("❌ Close", use_container_width=True, key="sp_close_popup_btn"):
+            st.session_state.active_party_id = None
+            st.session_state.party_edit_mode = False
+            st.rerun()
+            
+    st.markdown("---")
+    
+    if not st.session_state.party_edit_mode:
+        # Read Only মোড
+        st.markdown(f"### **Second Party Name:** {p_name}")
+        st.markdown(f"**Contact Number:** {p_contact if p_contact else '-'}")
+        st.markdown(f"**Comments 01:** {p_c1 if p_c1 else '-'}")
+        st.markdown(f"**Comments 02:** {p_c2 if p_c2 else '-'}")
+        
+        status_color = "#10b981" if p_status == "Active" else "#ef4444"
+        st.markdown(f"**Status:** <span style='color:{status_color}; font-weight:bold; font-size:16px;'>{p_status}</span>", unsafe_allow_html=True)
+    else:
+        # Edit মোড ফর্ম
+        with st.form("edit_second_party_form_v1"):
+            st.markdown("#### 📝 Update Second Party Info")
+            new_p_name = st.text_input("Second Party Name *", value=p_name)
+            new_p_contact = st.text_input("Contact Number", value=p_contact)
+            new_p_c1 = st.text_input("Comments 01", value=p_c1)
+            new_p_c2 = st.text_input("Comments 02", value=p_c2)
+            new_p_status = st.selectbox("Status", ["Active", "Inactive"], index=0 if p_status == "Active" else 1)
+            
+            save_sp = st.form_submit_button("💾 Save Changes", use_container_width=True)
+            if save_sp:
+                if not new_p_name.strip():
+                    st.error("Second Party Name খালি রাখা যাবে না!")
+                else:
+                    try:
+                        conn = sqlite3.connect(DB_NAME)
+                        cursor = conn.cursor()
+                        cursor.execute("""
+                            UPDATE second_parties 
+                            SET party_name=?, contact_number=?, comments_01=?, comments_02=?, status=?
+                            WHERE id=?
+                        """, (new_p_name.strip(), new_p_contact.strip(), new_p_c1.strip(), new_p_c2.strip(), new_p_status, party_id))
+                        conn.commit()
+                        conn.close()
+                        
+                        st.toast("সেকেন্ড পার্টির তথ্য সফলভাবে আপডেট করা হয়েছে!", icon="✅")
+                        st.session_state.active_party_id = None
+                        st.session_state.party_edit_mode = False
+                        import time
+                        time.sleep(0.5)
+                        st.rerun()
+                    except sqlite3.IntegrityError:
+                        st.error("এই নামের আরেকটি সেকেন্ড পার্টি ইতিমধ্যে ডাটাবেজে বিদ্যমান!")
 
 # ==============================================================================
 # ৬. কর্মচারীর প্রোফাইল ডিটেইলস ডায়ালগ
@@ -420,7 +516,7 @@ def show_employee_details(emp_id, company):
                     if new_emp_nid_img:
                         Image.open(new_emp_nid_img).save(emp_nid_path)
                     if new_guar_img:
-                        Image.open(new_guar_img).save(guar_photo_path) # 👈 (বাগ সংশোধন করা হয়েছে)
+                        Image.open(new_guar_img).save(guar_photo_path)
                     if new_guar_nid_img:
                         Image.open(new_guar_nid_img).save(guar_nid_path)
                         
@@ -441,7 +537,7 @@ def show_employee_details(emp_id, company):
                     conn.commit()
                     conn.close()
                     
-                    st.toast("কর্মচারী সম্পূর্ণ তথ্য এবং ডকুমেন্ট সফলভাবে আপডেট করা হয়েছে!", icon="✅")
+                    st.toast("कर्मীর সম্পূর্ণ তথ্য এবং ডকুমেন্ট সফলভাবে আপডেট করা হয়েছে!", icon="✅")
                     time.sleep(1.2)
                     st.session_state.active_emp_id = None
                     st.session_state.dialog_edit_mode = False
@@ -453,10 +549,8 @@ def show_employee_details(emp_id, company):
 st.sidebar.markdown("## Main Menu")
 user_role = st.session_state.get('user_role', None)
 
-# লগইন করা ইউজারের নাম ডাইনামিক্যালি দেখাবে
 st.sidebar.markdown(f"### স্বাগতম, <span style='color:#10b981;'>{user_role}</span> 👋", unsafe_allow_html=True)
 
-# লগআউট বাটন (সব ইউজারই দেখতে পাবে)
 if st.sidebar.button("🔒 লগআউট (Logout)", use_container_width=True):
     st.session_state.logged_in = False
     st.session_state.user_role = None
@@ -470,10 +564,9 @@ menu_options_emp = ["Add New Employee", "Add Employee By Upload", "View All Empl
 # ------------------------------------------------------------------------------
 # ১. 📁 bKash মেইন ফোল্ডার (শুধু admin এবং bKash_User দেখতে পাবে)
 # ------------------------------------------------------------------------------
-if user_role in ["admin", "bKash_User"]: # 👈 (bKas_User নাম সম্পূর্ণ বাদ দেওয়া হয়েছে)
+if user_role in ["admin", "bKash_User"]:
     with st.sidebar.expander("📁 bKash", expanded=(st.session_state.get('current_company') == "bKash")):
         
-        # সাব-ফোল্ডার: Employee Management
         with st.expander("📁 Employee Management", expanded=False):
             bk_default = menu_options_emp.index(st.session_state.current_action) if (st.session_state.get('current_company') == "bKash" and st.session_state.get('current_action') in menu_options_emp) else None
             def bk_emp_cb():
@@ -481,11 +574,9 @@ if user_role in ["admin", "bKash_User"]: # 👈 (bKas_User নাম সম্�
                 st.session_state.current_action = st.session_state.bk_emp_radio
             st.radio("bKash Emp Options", options=menu_options_emp, index=bk_default, key="bk_emp_radio", on_change=bk_emp_cb, label_visibility="collapsed")
             
-        # সাব-ফোল্ডার: Sales Management
         with st.expander("💰 Sales Management", expanded=False):
             st.caption("Sales features coming soon...")
             
-        # সাব-ফোল্ডার: Accounts Management
         with st.expander("📊 Account Management", expanded=False):
             if st.button("💵 Cash Management", key="bk_cash_btn", use_container_width=True):
                 st.session_state.current_company = "bKash"
@@ -496,7 +587,6 @@ if user_role in ["admin", "bKash_User"]: # 👈 (bKas_User নাম সম্�
                 st.session_state.current_action = "Expense Management"
                 st.rerun()
                 
-            # 👥 নেস্টেড সাব-ফোল্ডার: Second Party Management
             with st.expander("👥 Second Party Management", expanded=False):
                 if st.button("➕ Add New Second Party", key="bk_add_sp_btn", use_container_width=True):
                     st.session_state.current_company = "bKash"
@@ -507,7 +597,6 @@ if user_role in ["admin", "bKash_User"]: # 👈 (bKas_User নাম সম্�
                     st.session_state.current_action = "View All Second Parties"
                     st.rerun()
                 
-        # সাব-ফোল্ডার: Others
         with st.expander("📁 Others", expanded=False):
             if st.button("📁 Others Account", key="bk_oth_btn", use_container_width=True):
                 st.session_state.current_company = "bKash"
@@ -520,7 +609,6 @@ if user_role in ["admin", "bKash_User"]: # 👈 (bKas_User নাম সম্�
 if user_role in ["admin", "GP_User"]:
     with st.sidebar.expander("📁 GP", expanded=(st.session_state.get('current_company') == "GP")):
         
-        # সাব-ফোল্ডার: Employee Management
         with st.expander("📁 Employee Management", expanded=False):
             gp_default = menu_options_emp.index(st.session_state.current_action) if (st.session_state.get('current_company') == "GP" and st.session_state.get('current_action') in menu_options_emp) else None
             def gp_emp_cb():
@@ -528,11 +616,9 @@ if user_role in ["admin", "GP_User"]:
                 st.session_state.current_action = st.session_state.gp_emp_radio
             st.radio("GP Emp Options", options=menu_options_emp, index=gp_default, key="gp_emp_radio", on_change=gp_emp_cb, label_visibility="collapsed")
             
-        # সাব-ফোল্ডার: Sales Management
         with st.expander("💰 Sales Management", expanded=False):
             st.caption("Sales features coming soon...")
             
-        # সাব-ফোল্ডার: Accounts Management
         with st.expander("📊 Account Management", expanded=False):
             if st.button("💵 Cash Management", key="gp_cash_btn", use_container_width=True):
                 st.session_state.current_company = "GP"
@@ -543,7 +629,6 @@ if user_role in ["admin", "GP_User"]:
                 st.session_state.current_action = "Expense Management"
                 st.rerun()
                 
-            # 👥 নেস্টেড সাব-ফোল্ডার: Second Party Management
             with st.expander("👥 Second Party Management", expanded=False):
                 if st.button("➕ Add New Second Party", key="gp_add_sp_btn", use_container_width=True):
                     st.session_state.current_company = "GP"
@@ -554,7 +639,6 @@ if user_role in ["admin", "GP_User"]:
                     st.session_state.current_action = "View All Second Parties"
                     st.rerun()
                 
-        # সাব-ফোল্ডার: Others
         with st.expander("📁 Others", expanded=False):
             if st.button("📁 Others Account", key="gp_oth_btn", use_container_width=True):
                 st.session_state.current_company = "GP"
@@ -588,7 +672,6 @@ if current_action is None:
     user_role = st.session_state.get('user_role', None)
 current_company = st.session_state.get('current_company', None)
 
-# 🚨 রোল-বেসড নিরাপত্তা লক (Direct Session State Check - এখানেও bKas_User পরিবর্তন করা হয়েছে)
 if st.session_state.get('current_company') == "bKash" and st.session_state.get('user_role') not in ["admin", "bKash_User"]:
     st.error("❌ এই সেকশনটি দেখার অনুমতি আপনার নেই!")
     st.stop()
@@ -601,7 +684,7 @@ if current_action is None:
     st.markdown("<h2 style='text-align: center; font-family: \"Times New Roman\", serif; font-weight: bold;'>M/S JABED ENTERPRISE</h2>", unsafe_allow_html=True)
     st.markdown("<h4 style='text-align: center; color: #a0a0a0;'>ড্যাশবোর্ড系统中 আপনাকে স্বাগতম!</h4>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
-    st.info("💡 কাজ শুরু করতে বাম পাশের সাইডবার মেনু থেকে কোম্পানির নির্দিষ্ট ফোল্ডার এক্সপ্যান্ড করে কাঙ্ক্ষিত অপশনটি সিলেক্ট করুন।")
+    st.info("💡 কাজ শুরু করতে বাম পাশের সাইডবার মেনু থেকে কোম্পানির নির্দিষ্ট ফোল্ডার এক্সপ্যান্ড করে কাঙ্ঞ্চিত অপশনটি সিলেক্ট করুন।")
 
 # --- Employee Management Actions ---
 elif current_action == "Add New Employee":
@@ -808,8 +891,8 @@ elif current_action == "Add New Second Party":
                     conn = sqlite3.connect(DB_NAME)
                     cursor = conn.cursor()
                     cursor.execute("""
-                        INSERT INTO second_parties (party_name, contact_number, comments_01, comments_02)
-                        VALUES (?, ?, ?, ?)
+                        INSERT INTO second_parties (party_name, contact_number, comments_01, comments_02, status)
+                        VALUES (?, ?, ?, ?, 'Active')
                     """, (p_name.strip(), p_contact.strip(), p_comment1.strip(), p_comment2.strip()))
                     conn.commit()
                     conn.close()
@@ -823,16 +906,56 @@ elif current_action == "View All Second Parties":
     
     try:
         conn = sqlite3.connect(DB_NAME)
-        sp_df = pd.read_sql_query("SELECT id as 'ID', party_name as 'সেকেন্ড পার্টির নাম', contact_number as 'কন্টাক্ট নম্বর', comments_01 as 'মন্তব্য ০১', comments_02 as 'মন্তব্য ০২' FROM second_parties ORDER BY id DESC", conn)
+        # 🚨 লজিক: Active থাকবে উপরে (০), Inactive থাকবে নিচে (১)। এরপর নামের ক্রমানুসারে সর্টিং।
+        query = """
+            SELECT id, party_name, contact_number, comments_01, comments_02, status 
+            FROM second_parties 
+            ORDER BY CASE WHEN status = 'Active' THEN 0 ELSE 1 END, party_name ASC
+        """
+        sp_df = pd.read_sql_query(query, conn)
         conn.close()
         
         if not sp_df.empty:
             if search_sp:
                 q = search_sp.lower()
-                sp_df = sp_df[sp_df['সেকেন্ড পার্টির নাম'].str.lower().str.contains(q) | sp_df['কন্টাক্ট নম্বর'].str.contains(q)]
+                sp_df = sp_df[sp_df['party_name'].str.lower().str.contains(q) | sp_df['contact_number'].str.contains(q)]
                 
-            st.dataframe(sp_df, use_container_width=True, hide_index=True)
-            st.markdown(f"**মোট রেজিস্টার্ড সেকেন্ড পার্টি সংখ্যা:** `{len(sp_df)} টি`")
+            st.markdown("""
+                <style>
+                .sp-grid-header { font-weight: bold; padding: 6px; background-color: #262730; border-radius: 4px; text-align: left; }
+                </style>
+            """, unsafe_allow_html=True)
+            
+            # টেবিল গ্রিড হেডার লেআউট
+            h_col0, h_col1, h_col2, h_col3 = st.columns([0.8, 2.8, 2.4, 1.2])
+            h_col0.markdown("<div class='sp-grid-header'>Action</div>", unsafe_allow_html=True)
+            h_col1.markdown("<div class='sp-grid-header'>Second Party Name</div>", unsafe_allow_html=True)
+            h_col2.markdown("<div class='sp-grid-header'>Contact Number</div>", unsafe_allow_html=True)
+            h_col3.markdown("<div class='sp-grid-header'>Status</div>", unsafe_allow_html=True)
+            st.markdown("<hr style='margin: 4px 0px 10px 0px; border-color: #444;'>", unsafe_allow_html=True)
+            
+            # রো গ্রিড ডেটা রেন্ডারিং
+            for idx, row in sp_df.iterrows():
+                r_col0, r_col1, r_col2, r_col3 = st.columns([0.8, 2.8, 2.4, 1.2])
+                
+                # আপনার রিকোয়েস্ট অনুযায়ী নামের পাশে "👁️ View" বাটন
+                if r_col0.button("👁️ View", key=f"sp_view_btn_{row['id']}_{idx}", use_container_width=True):
+                    st.session_state.active_party_id = row['id']
+                    st.session_state.party_edit_mode = False
+                    st.rerun()
+                    
+                r_col1.write(row['party_name'])
+                r_col2.write(row['contact_number'] if row['contact_number'] else "-")
+                
+                status_str = row['status'] if row['status'] else "Active"
+                if status_str == "Active":
+                    r_col3.markdown("<span style='color:#10b981; font-weight:bold;'>Active</span>", unsafe_allow_html=True)
+                else:
+                    r_col3.markdown("<span style='color:#ef4444; font-weight:bold;'>Inactive</span>", unsafe_allow_html=True)
+                    
+                st.markdown("<hr style='margin: 2px 0px; border-color: #222;'>", unsafe_allow_html=True)
+                
+            st.markdown(f"<br>**মোট রেজিস্টার্ড সেকেন্ড পার্টি সংখ্যা:** `{len(sp_df)} টি`")
         else:
             st.info("বর্তমানে ডাটাবেজে কোনো সেকেন্ড পার্টির তথ্য নেই।")
     except Exception as e:
@@ -843,8 +966,9 @@ elif current_action == "Cash Management":
     st.markdown(f"### 💵 Cash Management ({current_company})")
     
     conn = sqlite3.connect(DB_NAME)
+    # ক্যাশ এন্ট্রির ড্রপডাউনে শুধুমাত্র Active সেকেন্ড পার্টিদের নাম দেখাবে
     cursor = conn.cursor()
-    cursor.execute("SELECT party_name FROM second_parties")
+    cursor.execute("SELECT party_name FROM second_parties WHERE status = 'Active' OR status IS NULL")
     parties_list = [r[0] for r in cursor.fetchall()]
     conn.close()
     
@@ -950,7 +1074,7 @@ elif current_action == "Cash Management":
             
             m1, m2, m3 = st.columns(3)
             m1.metric("মোট ক্যাশ ইন (Total Cash In)", f"{total_in:,.1f} ৳")
-            m2.metric("মোট ক্যাশ আউট (Total Cash Out)", f"{total_out:,.1f} ৳")
+            m2.metric("মোট ক্যাশアウト (Total Cash Out)", f"{total_out:,.1f} ৳")
             m3.metric("ক্লোজিং ব্যালেন্স (Closing Balance)", f"{closing_balance:,.1f} ৳")
             
             st.markdown("---")
@@ -975,3 +1099,7 @@ elif current_action == "Others":
 # ==============================================================================
 if st.session_state.active_emp_id:
     show_employee_details(st.session_state.active_emp_id, st.session_state.current_company)
+
+# সেকেন্ড পার্টির গ্লোবাল ডায়ালগ কন্ট্রোলার ও ট্রিগার
+if st.session_state.active_party_id:
+    show_second_party_details(st.session_state.active_party_id)
