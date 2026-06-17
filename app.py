@@ -37,7 +37,7 @@ if not st.session_state.logged_in:
                 if username == "admin" and password == "jabed2026":
                     st.session_state.logged_in = True
                     st.session_state.user_role = "admin"
-                    st.session_state.current_action = None # 👈 নিরাপদে রিফ্রেশ করার জন্য এখানেও যোগ করা হলো
+                    st.session_state.current_action = None 
                     st.success("এডমিন হিসেবে লগইন সফল হয়েছে!")
                     import time
                     time.sleep(0.5)
@@ -48,7 +48,7 @@ if not st.session_state.logged_in:
                     st.session_state.logged_in = True
                     st.session_state.user_role = "bKash_User"
                     st.session_state.current_company = "bKash" 
-                    st.session_state.current_action = None # 👈 🔴 এই নতুন লাইনটি যোগ করা হলো
+                    st.session_state.current_action = None 
                     st.success("বিকাশ ইউজার লগইন সফল!")
                     import time
                     time.sleep(0.5)
@@ -59,7 +59,7 @@ if not st.session_state.logged_in:
                     st.session_state.logged_in = True
                     st.session_state.user_role = "GP_User"
                     st.session_state.current_company = "GP" 
-                    st.session_state.current_action = None # 👈 🔴 এই নতুন লাইনটি যোগ করা হলো
+                    st.session_state.current_action = None 
                     st.success("GP ইউজার লগইন সফল!")
                     import time
                     time.sleep(0.5)
@@ -67,6 +67,7 @@ if not st.session_state.logged_in:
                 else:
                     st.error("ভুল ইউজারনেম অথবা পাসওয়ার্ড! আবার চেষ্টা করুন।")
     st.stop()
+
 # ==============================================================================
 # ২. ডাইনামিক পাথ ও ফোল্ডার সেটআপ
 # ==============================================================================
@@ -419,7 +420,7 @@ def show_employee_details(emp_id, company):
                     if new_emp_nid_img:
                         Image.open(new_emp_nid_img).save(emp_nid_path)
                     if new_guar_img:
-                        Image.open(new_guar_img).save(guar_photo_path)
+                        Image.open(new_guar_img).save(guar_photo_path) # 👈 (বাগ সংশোধন করা হয়েছে)
                     if new_guar_nid_img:
                         Image.open(new_guar_nid_img).save(guar_nid_path)
                         
@@ -440,7 +441,7 @@ def show_employee_details(emp_id, company):
                     conn.commit()
                     conn.close()
                     
-                    st.toast("कर्मীর সম্পূর্ণ তথ্য এবং ডকুমেন্ট সফলভাবে আপডেট করা হয়েছে!", icon="✅")
+                    st.toast("কর্মচারী সম্পূর্ণ তথ্য এবং ডকুমেন্ট সফলভাবে আপডেট করা হয়েছে!", icon="✅")
                     time.sleep(1.2)
                     st.session_state.active_emp_id = None
                     st.session_state.dialog_edit_mode = False
@@ -469,7 +470,7 @@ menu_options_emp = ["Add New Employee", "Add Employee By Upload", "View All Empl
 # ------------------------------------------------------------------------------
 # ১. 📁 bKash মেইন ফোল্ডার (শুধু admin এবং bKash_User দেখতে পাবে)
 # ------------------------------------------------------------------------------
-if user_role in ["admin", "bKash_User", "bKash_User"]:
+if user_role in ["admin", "bKash_User"]: # 👈 (bKas_User নাম সম্পূর্ণ বাদ দেওয়া হয়েছে)
     with st.sidebar.expander("📁 bKash", expanded=(st.session_state.get('current_company') == "bKash")):
         
         # সাব-ফোল্ডার: Employee Management
@@ -575,11 +576,11 @@ if user_role == "admin":
 # ------------------------------------------------------------------------------
 if user_role == "admin":
     with st.sidebar.expander("⚙️ পাসওয়ার্ড রিসেট প্যানেল (Admin)", expanded=False):
-        # 💡 আপনার পাসওয়ার্ড রিসেট প্যানেলের ভেতরের কোডটুকু এখানে থাকবে
         st.write("Password reset features here...")
 
 st.sidebar.markdown("---")
 current_action = st.session_state.get('current_action', None)
+
 # ==============================================================================
 # ৮. অ্যাকশন এক্সিকিউশন লজিক (Main Body Router)
 # ==============================================================================
@@ -587,19 +588,18 @@ if current_action is None:
     user_role = st.session_state.get('user_role', None)
 current_company = st.session_state.get('current_company', None)
 
-# 🚨 রোল-বেসড নিরাপত্তা লক (Direct Session State Check - কোনো NameError আসবে না)
-if st.session_state.get('current_company') == "bKash" and st.session_state.get('user_role') not in ["admin", "bKash_User", "bKash_User"]:
+# 🚨 রোল-বেসড নিরাপত্তা লক (Direct Session State Check - এখানেও bKas_User পরিবর্তন করা হয়েছে)
+if st.session_state.get('current_company') == "bKash" and st.session_state.get('user_role') not in ["admin", "bKash_User"]:
     st.error("❌ এই সেকশনটি দেখার অনুমতি আপনার নেই!")
     st.stop()
 
 if st.session_state.get('current_company') == "GP" and st.session_state.get('user_role') not in ["admin", "GP_User"]:
     st.error("❌ এই সেকশনটি দেখার অনুমতি আপনার নেই!")
     st.stop()
-# 👆 [পেস্ট করা শেষ]
 
 if current_action is None:
     st.markdown("<h2 style='text-align: center; font-family: \"Times New Roman\", serif; font-weight: bold;'>M/S JABED ENTERPRISE</h2>", unsafe_allow_html=True)
-    st.markdown("<h4 style='text-align: center; color: #a0a0a0;'>ড্যাশবোর্ড সিস্টেমে আপনাকে স্বাগতম!</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center; color: #a0a0a0;'>ড্যাশবোর্ড系统中 আপনাকে স্বাগতম!</h4>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     st.info("💡 কাজ শুরু করতে বাম পাশের সাইডবার মেনু থেকে কোম্পানির নির্দিষ্ট ফোল্ডার এক্সপ্যান্ড করে কাঙ্ক্ষিত অপশনটি সিলেক্ট করুন।")
 
@@ -788,10 +788,10 @@ elif current_action == "View All Employee":
     except Exception as e:
         st.error(f"ডাটা লোড করার সময় সমস্যা হয়েছে: {e}")
 
-# --- 👥 Second Party Management (New Features Execution Logic) ---
+# --- 👥 Second Party Management ---
 elif current_action == "Add New Second Party":
     st.markdown(f"### 👥 Add New Second Party ({current_company})")
-    st.markdown("নতুন কোনো এজেন্ট, ডিলার বা অ্যাকাউন্টস লেজারের জন্য সেকেন্ড পার্টি নাম এখানে যুক্ত করুন।")
+    st.markdown("নতুন কোনো এজেন্ট, ডিলার বা অ্যাকাউন্টস লেজারের জন্য সেকেন্ড পার্টি নাম এখানেযুক্ত করুন।")
     
     with st.form("add_second_party_form", clear_on_submit=True):
         p_name = st.text_input("সেকেন্ড পার্টির নাম (Second Party Name) *")
