@@ -565,14 +565,14 @@ if current_action is None:
     user_role = st.session_state.get('user_role', None)
 current_company = st.session_state.get('current_company', None)
 
-if current_company == "bKash" and user_role not in ["admin", "bKash_User"]:
+# 🚨 রোল-বেসড নিরাপত্তা লক (Direct Session State Check - কোনো NameError আসবে না)
+if st.session_state.get('current_company') == "bKash" and st.session_state.get('user_role') not in ["admin", "bKas_User", "bKash_User"]:
     st.error("❌ এই সেকশনটি দেখার অনুমতি আপনার নেই!")
     st.stop()
 
-if current_company == "GP" and user_role not in ["admin", "GP_User"]:
+if st.session_state.get('current_company') == "GP" and st.session_state.get('user_role') not in ["admin", "GP_User"]:
     st.error("❌ এই সেকশনটি দেখার অনুমতি আপনার নেই!")
     st.stop()
-
 # 👆 [পেস্ট করা শেষ]
 
 if current_action is None:
