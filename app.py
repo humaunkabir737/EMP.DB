@@ -1474,47 +1474,82 @@ elif current_action == "Cash Management":
 # ==============================================================================
 # লজিক ০৪: Expense Management মডিউলের সাথে Petty Cash লিঙ্কিং অটোমেশন
 # ==============================================================================
+# ==============================================================================
+# লজিক ০৪: Expense Management মডিউল (মাল্টি-রো পাশাপাশি কলাম এন্ট্রি সিস্টেম)
+# ==============================================================================
 elif current_action == "Expense Management":
     st.markdown(f"### 📉 Expense Management Module ({current_company})")
     st.markdown("💡 এই মডিউলের সমস্ত খরচ স্বয়ংক্রিয়ভাবে ক্যাশ খাতার **'Petty_Cash'** অ্যাকাউন্ট থেকে মাইনাস (Cash Out) হবে।")
 
-    exp_tab1, exp_tab2 = st.tabs(["📥 নতুন খরচ এন্ট্রি করুন", "📖 খরচের খতিয়ান ও রিপোর্ট"])
+    exp_tab1, exp_tab2 = st.tabs(["📥 একসাথে একাধিক খরচ এন্ট্রি করুন", "📖 খরচের খতিয়ান ও রিপোর্ট"])
 
     with exp_tab1:
-        with st.form("expense_entry_form", clear_on_submit=True):
-            exp_date = st.date_input("খরচের তারিখ:", datetime.now().date())
-            exp_category = st.selectbox("খরচের খাত (Expense Category):", [
-                "Operation Expense", "Office Rent", "Entertainment (চা-নাস্তা)", 
-                "Conveyance (যাতায়াত)", "Fuel & Transport", "Staff Salary", "Utilities (বিদ্যুৎ বিল)", "Others Expense"
-            ])
-            exp_amount = st.number_input("খরচের পরিমাণ (Amount ৳):", min_value=0.0, step=100.0)
-            exp_remarks = st.text_area("খরচের বিস্তারিত বিবরণ (Remarks):")
+        # একবারে কয়টি খরচের লাইন দেখতে চান তা সিলেক্ট করার অপশন (ডিফল্ট ১০টি, চাইলে ১৫ বা ২০টি করা যাবে)
+        num_rows = st.number_input("একসাথে কয়টি খরচ এন্ট্রি করতে চান? (১০/১৫ টি)", min_value=1, max_value=25, value=10, step=1)
+        
+        with st.form("multi_expense_entry_form", clear_on_submit=True):
+            # তারিখ বাই ডিফল্ট আজকের ডেট থাকবে, তবে ইউজার চাইলে চেঞ্জ করতে পারবেন
+            exp_date = st.date_input("📆 খরচের তারিখ (Date):", datetime.now().date())
+            st.markdown("---")
             
-            submit_expense = st.form_submit_button("💾 খরচ সাবমিট করুন", use_container_width=True)
-            if submit_expense:
-                if exp_amount <= 0:
-                    st.error("খরচের পরিমাণ অবশ্যই ০ টাকার বেশি হতে হবে!")
-                else:
-                    conn = sqlite3.connect(DB_NAME)
-                    cursor = conn.cursor()
-                    # খরচ এন্ট্রি হওয়ার সাথে সাথে ক্যাশ খাতায় 'Petty_Cash' থেকে Cash Out হিসেবে ডাটা পুশ হবে
-                    formatted_remarks = f"[{exp_category}] {exp_remarks}"
-                    cursor.execute("""
-                        INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks)
-                        VALUES (?, ?, 'Petty_Cash', 'Cash Out', ?, ?)
-                    """, (str(exp_date), current_company, exp_amount, formatted_remarks))
-                    conn.commit()
-                    conn.close()
-                    
-                    st.toast(f"🎉 ৳{exp_amount:,.1f} এর খরচটি সফলভাবে সংরক্ষিত এবং Petty_Cash থেকে কর্তন করা হয়েছে!", icon="📉")
+            # পাশাপাশি কলামের জন্য টেবিল হেডার তৈরি
+            h1, h2, h3 = st.columns([3, 2, 5])
+            h1.markdown("**খাত (Expense Category):**")
+            h2.markdown("**খরচের পরিমাণ (Amount ৳):**")
+            h3.markdown("**খরচের বিস্তারিত বিবরণ (Remarks):**")
+            
+            expense_rows_data = []
+            categories_options = [
+                "-- সিলেক্ট করুন --", "Operation Expense", "Office Rent", 
+                "Entertainment (চা-নাস্তা)", "Conveyance (যাতায়াত)", 
+                "Fuel & Transport", "Staff Salary", "Utilities (বিদ্যুৎ বিল)", "Others Expense"
+            ]
+            
+            # লুপের মাধ্যমে নির্দিষ্ট সংখ্যক রো-কে পাশাপাশি কলামে রেন্ডার করা
+            for i in range(int(num_rows)):
+                c1, c2, c3 = st.columns([3, 2, 5])
+                with c1:
+                    cat = st.selectbox(f"Category_{i}", categories_options, key=f"exp_cat_{i}", label_visibility="collapsed")
+                with c2:
+                    amt = st.number_input(f"Amount_{i}", min_value=0.0, step=50.0, key=f"exp_amt_{i}", label_visibility="collapsed")
+                with c3:
+                    rem = st.text_input(f"Remarks_{i}", key=f"exp_rem_{i}", label_visibility="collapsed", placeholder=f"{i+1} নং খরচের বিবরণ লিখুন...")
+                
+                # ডেটাগুলো লিস্টে জমা রাখা
+                expense_rows_data.append((cat, amt, rem))
+            
+            st.markdown("---")
+            submit_all_expenses = st.form_submit_button("💾 সকল খরচ একসাথে সাবমিট করুন", use_container_width=True)
+            
+            if submit_all_expenses:
+                valid_entries = 0
+                conn = sqlite3.connect(DB_NAME)
+                cursor = conn.cursor()
+                
+                # লুপ চালিয়ে শুধুমাত্র ফিল্ডআপ করা ডেটাগুলো ডাটাবেজে পাঠানো
+                for cat, amt, rem in expense_rows_data:
+                    if cat != "-- সিলেক্ট করুন --" and amt > 0:
+                        formatted_remarks = f"[{cat}] {rem}".strip()
+                        cursor.execute("""
+                            INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks)
+                            VALUES (?, ?, 'Petty_Cash', 'Cash Out', ?, ?)
+                        """, (str(exp_date), current_company, amt, formatted_remarks))
+                        valid_entries += 1
+                        
+                conn.commit()
+                conn.close()
+                
+                if valid_entries > 0:
+                    st.toast(f"🎉 সফলভাবে মোট {valid_entries}টি খরচ সংরক্ষিত এবং Petty_Cash থেকে কর্তন করা হয়েছে!", icon="📉")
                     import time
                     time.sleep(0.5)
                     st.rerun()
+                else:
+                    st.error("❌ কোনো খরচ সংরক্ষণ করা হয়নি! দয়া করে কমপক্ষে একটি লাইনে খাত সিলেক্ট করুন এবং সঠিক পরিমাণ ইনপুট দিন।")
 
     with exp_tab2:
         st.markdown("##### 📊 আপনার কোম্পানির খরচ সমূহের তালিকা (Petty Cash Ledger)")
         conn = sqlite3.connect(DB_NAME)
-        # শুধুমাত্র Petty_Cash খাতের Cash Out লেনদেনগুলোই আমাদের খরচ বিবরণী
         exp_query = """
             SELECT date as 'তারিখ', amount as 'খরচের পরিমাণ (৳)', remarks as 'বিস্তারিত বিবরণ' 
             FROM cash_transactions 
