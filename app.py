@@ -1263,10 +1263,274 @@ elif current_action == "Cash Management":
         except Exception as e:
             st.error(f"ইতিহাস লোড করতে ত্রুটি হয়েছে: {e}")
 
-elif current_action == "Expense Management":
-    st.markdown(f"### 📉 Expense Management ({current_company})")
-    st.info("💡 দৈনন্দিন খরচের (Expense Management) মডিউলটি একইভাবে ক্যাশ খাতার লজিক অনুসরণ করে ডেভলপ করা যাবে।")
+elif current_action == "Cash Management":
+    st.markdown(f"### 📊 Unified Dynamic Cash Management ({current_company})")
+    
+    # ব্যাকএন্ড ডাটাবেজ টেবিল ও বিশেষ সেকেন্ড পার্টিসমূহ নিশ্চিতকরণ
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    # ইনভেস্টমেন্ট কনফিগারেশন টেবিল
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS company_settings (
+            company TEXT PRIMARY KEY,
+            initial_investment REAL DEFAULT 0.0
+        )
+    ''')
+    # "Invest" এবং "Petty_Cash" সেকেন্ড পার্টি সিস্টেমে অটো-ক্রিয়েট করা
+    for auto_party in ["Invest", "Petty_Cash"]:
+        cursor.execute("""
+            INSERT OR IGNORE INTO second_parties (company, party_name, contact_number, comments_01, comments_02, status)
+            VALUES (?, ?, '', '', '', 'Active')
+        """, (current_company, auto_party))
+    conn.commit()
+    conn.close()
 
+    # ডাটাবেজ থেকে প্রারম্ভিক ইনভেস্টমেন্ট (Initial Investment) রিড করা
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT initial_investment FROM company_settings WHERE company = ?", (current_company,))
+    inv_row = cursor.fetchone()
+    initial_investment = inv_row[0] if inv_row else 0.0
+    conn.close()
+
+    # গ্লোবাল তারিখ সিলেকশন (যা পুরো ড্যাশবোর্ডের ওপেনিং ব্যালেন্স নির্ধারণ করবে)
+    selected_date = st.date_input("📆 রিপোর্টের তারিখ সিলেক্ট করুন:", datetime.now().date())
+
+    # --------------------------------------------------------------------------
+    # হেল্পার ফাংশন: যেকোনো খাতের নির্দিষ্ট তারিখের আগের অটো-ওপেনিং ব্যালেন্স বের করা
+    # --------------------------------------------------------------------------
+    def calculate_opening_balance(company, party_name, target_date):
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        # টার্গেট তারিখের আগের সমস্ত Cash In এবং Cash Out এর বিয়োগফলই হলো আজকের ওপেনিং
+        cursor.execute("""
+            SELECT 
+                SUM(CASE WHEN type = 'Cash In' THEN amount ELSE 0 END) -
+                SUM(CASE WHEN type = 'Cash Out' THEN amount ELSE 0 END)
+            FROM cash_transactions
+            WHERE company = ? AND second_party = ? AND date < ?
+        """, (company, party_name, str(target_date)))
+        res = cursor.fetchone()[0]
+        conn.close()
+        return res if res is not None else 0.0
+
+    # --------------------------------------------------------------------------
+    # লজিক ০১: ইনভেস্টমেন্ট স্বয়ংক্রিয় ট্র্যাকিং (Invest খাতের নেট ট্রানজেকশন)
+    # --------------------------------------------------------------------------
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT 
+            SUM(CASE WHEN type = 'Cash In' THEN amount ELSE 0 END) -
+            SUM(CASE WHEN type = 'Cash Out' THEN amount ELSE 0 END)
+        FROM cash_transactions WHERE company = ? AND second_party = 'Invest'
+    """, (current_company,))
+    net_invest_changes = cursor.fetchone()[0] or 0.0
+    conn.close()
+    
+    current_live_investment = initial_investment + net_invest_changes
+
+    # কোম্পানির মূল ড্রপডাউন লিস্ট লোড করা
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT party_name FROM second_parties WHERE (status = 'Active' OR status IS NULL) AND company = ? ORDER BY party_name ASC", (current_company,))
+    parties_list = [r[0] for r in cursor.fetchall()]
+    conn.close()
+
+    # ইন্টারফেসের জন্য ৩টি ট্যাব বিভাজন
+    t_dash, t_entry, t_ledger = st.tabs(["🏛️ Auto-Reconciliation Dashboard", "📝 New Entry & Excel Upload", "📖 Cash Ledger View"])
+
+    with t_dash:
+        st.markdown("#### 🏛️ স্বয়ংক্রিয় ওপেনিং ও লাইভ ব্যালেন্স বিবরণী")
+        
+        # ইনভেস্টমেন্ট সেটআপ ও লাইভ কাউন্টার
+        inv_c1, inv_c2 = st.columns([2, 2])
+        with inv_c1:
+            if initial_investment == 0.0:
+                with st.expander("🔑 প্রারম্ভিক ইনভেস্টমেন্ট একবারের জন্য সেট করুন", expanded=True):
+                    new_inv_input = st.number_input("ওপেনিং ইনভেস্টমেন্ট অ্যামাউন্ট (৳):", min_value=0.0, step=5000.0)
+                    if st.button("💾 ইনভেস্টমেন্ট লক করুন"):
+                        conn = sqlite3.connect(DB_NAME)
+                        cursor = conn.cursor()
+                        cursor.execute("INSERT OR REPLACE INTO company_settings (company, initial_investment) VALUES (?, ?)", (current_company, new_inv_input))
+                        conn.commit()
+                        conn.close()
+                        st.success("প্রারম্ভিক ইনভেস্টমেন্ট সফলভাবে ডাটাবেজে লক করা হয়েছে!")
+                        st.rerun()
+            else:
+                st.metric("🏛️ আপনার লক করা প্রারম্ভিক ইনভেস্টমেন্ট", f"{initial_investment:,.1f} ৳")
+        
+        with inv_c2:
+            st.metric("📈 বর্তমান লাইভ ইনভেস্টমেন্ট (অটো-আপডেটেড)", f"{current_live_investment:,.1f} ৳", 
+                      delta=f"{net_invest_changes:+,1f} ৳ (Invest খাত)")
+
+        st.markdown("---")
+        st.markdown(f"##### 💰 {selected_date} তারিখের স্বয়ংক্রিয় প্রারম্ভিক (Opening) ব্যালেন্স সমূহ:")
+        
+        # প্রধান খাতগুলোর ওপেনিং ডাটাবেজের পূর্বের দিনের ক্লোজিং থেকে রিয়েল-টাইম হিসাব
+        op_vault = calculate_opening_balance(current_company, "Hand_Cash", selected_date)
+        op_bank = calculate_opening_balance(current_company, "Bank", selected_date)
+        op_petty = calculate_opening_balance(current_company, "Petty_Cash", selected_date)
+        op_invest = calculate_opening_balance(current_company, "Invest", selected_date)
+        
+        m_c1, m_c2, m_c3, m_c4 = st.columns(4)
+        m_c1.metric("🟢 Opening Hand Cash/Vault", f"{op_vault:,.1f} ৳")
+        m_c2.metric("🔵 Opening DM & DSS Bank", f"{op_bank:,.1f} ৳")
+        m_c3.metric("🟤 Opening Petty Cash", f"{op_petty:,.1f} ৳")
+        m_c4.metric("🟣 Opening Invest Balance", f"{op_invest:,.1f} ৳")
+
+        # অন্যান্য সমস্ত সেকেন্ড পার্টির ওপেনিং অটোমেশন ভিউ
+        with st.expander("📋 অন্যান্য সকল খাতের স্বয়ংক্রিয় ওপেনিং ব্যালেন্স তালিকা দেখুন"):
+            all_op_data = []
+            for p in parties_list:
+                if p not in ["Hand_Cash", "Bank", "Petty_Cash", "Invest"]:
+                    bal = calculate_opening_balance(current_company, p, selected_date)
+                    all_op_data.append({"খাত/সেকেন্ড পার্টি": p, "স্বয়ংক্রিয় ওপেনিং ব্যালেন্স (৳)": f"{bal:,.1f} ৳"})
+            if all_op_data:
+                st.dataframe(pd.DataFrame(all_op_data), use_container_width=True, hide_index=True)
+            else:
+                st.caption("কোনো অতিরিক্ত খাতের রেকর্ড পাওয়া যায়নি।")
+
+    with t_entry:
+        col_m, col_x = st.columns(2)
+        with col_m:
+            st.markdown("##### 📝 ম্যানুয়াল লেনদেন এন্ট্রি (শুধুমাত্র দৈনিক নতুন জমা ও খরচ)")
+            with st.form("manual_cash_form_v2", clear_on_submit=True):
+                cash_type = st.selectbox("লেনদেনের ধরন (Type)", ["Cash In", "Cash Out"])
+                cash_party = st.selectbox("সেকেন্ড পার্টি (Second Party)", parties_list if parties_list else ["None"])
+                cash_amount = st.number_input("পরিমাণ (Amount ৳)", min_value=0.0, step=500.0)
+                cash_remarks = st.text_area("মন্তব্য (Remarks)")
+                
+                save_cash = st.form_submit_button("💾 লেনদেন সংরক্ষণ করুন", use_container_width=True)
+                if save_cash:
+                    if cash_amount <= 0:
+                        st.error("পরিমাণ অবশ্যই ০ টাকার বেশি হতে হবে!")
+                    elif cash_party == "None":
+                        st.error("অনুগ্রহ করে সেকেন্ড পার্টি সিলেক্ট করুন!")
+                    else:
+                        conn = sqlite3.connect(DB_NAME)
+                        cursor = conn.cursor()
+                        cursor.execute("""
+                            INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        """, (str(selected_date), current_company, cash_party, cash_type, cash_amount, cash_remarks))
+                        conn.commit()
+                        conn.close()
+                        st.toast(f"✅ সফলভাবে ৳{cash_amount:,.1f} লেনদেন সিস্টেমে অন্তর্ভুক্ত হয়েছে!", icon="💰")
+                        import time
+                        time.sleep(0.5)
+                        st.rerun()
+
+        with col_x:
+            st.markdown("##### 📤 এক্সেল ফাইল আপলোড (বাল্ক ইমপোর্ট)")
+            cash_buffer = io.BytesIO()
+            cash_template_df = pd.DataFrame(columns=["date", "second_party", "type", "amount", "remarks"])
+            cash_template_df.loc[0] = [str(selected_date), "Hand_Cash", "Cash In", 5000.0, "Sample Bulk Upload"]
+            with pd.ExcelWriter(cash_buffer, engine='openpyxl') as writer:
+                cash_template_df.to_excel(writer, index=False, sheet_name='Cash_Template')
+                
+            st.download_button("📥 ডাউনলোড এক্সেল টেমপ্লেট", data=cash_buffer.getvalue(), file_name=f"{current_company}_cash_template.xlsx")
+            
+            uploaded_cash_file = st.file_uploader("আপনার এক্সেল ফাইলটি এখানে ড্রপ করুন", type=["xlsx"], key="excel_cash_uploader_unique")
+            if uploaded_cash_file is not None:
+                try:
+                    upload_df = pd.read_excel(uploaded_cash_file)
+                    if st.button("💾 ডাটাবেজে এক্সেল ডেটা পুশ করুন", type="primary", use_container_width=True):
+                        conn = sqlite3.connect(DB_NAME)
+                        cursor = conn.cursor()
+                        count = 0
+                        for _, row in upload_df.iterrows():
+                            r_amount = float(row['amount']) if pd.notnull(row['amount']) else 0.0
+                            if r_amount > 0:
+                                cursor.execute("""
+                                    INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks)
+                                    VALUES (?, ?, ?, ?, ?, ?)
+                                """, (str(row['date']), current_company, str(row['second_party']), str(row['type']), r_amount, str(row.get('remarks', ''))))
+                                count += 1
+                        conn.commit()
+                        conn.close()
+                        st.success(f"✅ সফলভাবে মোট {count} টি ক্যাশ লেনদেন ইমপোর্ট করা হয়েছে!")
+                        import time
+                        time.sleep(0.5)
+                        st.rerun()
+                except Exception as e:
+                    st.error(f"এক্সেল প্রসেস করতে সমস্যা হয়েছে: {e}")
+
+    with t_ledger:
+        st.markdown("#### 📖 ক্যাশ খাতা ও খতিয়ান ভিউ")
+        conn = sqlite3.connect(DB_NAME)
+        tx_query = "SELECT date as 'তারিখ', second_party as 'সেকেন্ড পার্টি', type as 'ধরনের লেনদেন', amount as 'পরিমাণ (৳)', remarks as 'মন্তব্য' FROM cash_transactions WHERE company = ? ORDER BY date DESC, id DESC"
+        tx_df = pd.read_sql_query(tx_query, conn, params=(current_company,))
+        conn.close()
+        
+        if not tx_df.empty:
+            search_p = st.text_input("🔍 নির্দিষ্ট সেকেন্ড পার্টি লিখে ফিল্টার করুন:")
+            if search_p:
+                tx_df = tx_df[tx_df['সেকেন্ড পার্টি'].str.lower().str.contains(search_p.lower())]
+            st.dataframe(tx_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("বর্তমানে কোনো ক্যাশ লেনদেনের রেকর্ড ডাটাবেজে নেই।")
+
+# ==============================================================================
+# লজিক ০৪: Expense Management মডিউলের সাথে Petty Cash লিঙ্কিং অটোমেশন
+# ==============================================================================
+elif current_action == "Expense Management":
+    st.markdown(f"### 📉 Expense Management Module ({current_company})")
+    st.markdown("💡 এই মডিউলের সমস্ত খরচ স্বয়ংক্রিয়ভাবে ক্যাশ খাতার **'Petty_Cash'** অ্যাকাউন্ট থেকে মাইনাস (Cash Out) হবে।")
+
+    exp_tab1, exp_tab2 = st.tabs(["📥 নতুন খরচ এন্ট্রি করুন", "📖 খরচের খতিয়ান ও রিপোর্ট"])
+
+    with exp_tab1:
+        with st.form("expense_entry_form", clear_on_submit=True):
+            exp_date = st.date_input("খরচের তারিখ:", datetime.now().date())
+            exp_category = st.selectbox("খরচের খাত (Expense Category):", [
+                "Operation Expense", "Office Rent", "Entertainment (চা-নাস্তা)", 
+                "Conveyance (যাতায়াত)", "Fuel & Transport", "Staff Salary", "Utilities (বিদ্যুৎ বিল)", "Others Expense"
+            ])
+            exp_amount = st.number_input("খরচের পরিমাণ (Amount ৳):", min_value=0.0, step=100.0)
+            exp_remarks = st.text_area("খরচের বিস্তারিত বিবরণ (Remarks):")
+            
+            submit_expense = st.form_submit_button("💾 খরচ সাবমিট করুন", use_container_width=True)
+            if submit_expense:
+                if exp_amount <= 0:
+                    st.error("খরচের পরিমাণ অবশ্যই ০ টাকার বেশি হতে হবে!")
+                else:
+                    conn = sqlite3.connect(DB_NAME)
+                    cursor = conn.cursor()
+                    # খরচ এন্ট্রি হওয়ার সাথে সাথে ক্যাশ খাতায় 'Petty_Cash' থেকে Cash Out হিসেবে ডাটা পুশ হবে
+                    formatted_remarks = f"[{exp_category}] {exp_remarks}"
+                    cursor.execute("""
+                        INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks)
+                        VALUES (?, ?, 'Petty_Cash', 'Cash Out', ?, ?)
+                    """, (str(exp_date), current_company, exp_amount, formatted_remarks))
+                    conn.commit()
+                    conn.close()
+                    
+                    st.toast(f"🎉 ৳{exp_amount:,.1f} এর খরচটি সফলভাবে সংরক্ষিত এবং Petty_Cash থেকে কর্তন করা হয়েছে!", icon="📉")
+                    import time
+                    time.sleep(0.5)
+                    st.rerun()
+
+    with exp_tab2:
+        st.markdown("##### 📊 আপনার কোম্পানির খরচ সমূহের তালিকা (Petty Cash Ledger)")
+        conn = sqlite3.connect(DB_NAME)
+        # শুধুমাত্র Petty_Cash খাতের Cash Out লেনদেনগুলোই আমাদের খরচ বিবরণী
+        exp_query = """
+            SELECT date as 'তারিখ', amount as 'খরচের পরিমাণ (৳)', remarks as 'বিস্তারিত বিবরণ' 
+            FROM cash_transactions 
+            WHERE company = ? AND second_party = 'Petty_Cash' AND type = 'Cash Out'
+            ORDER BY date DESC, id DESC
+        """
+        exp_df = pd.read_sql_query(exp_query, conn, params=(current_company,))
+        conn.close()
+        
+        if not exp_df.empty:
+            total_expenses = exp_df['খরচের পরিমাণ (৳)'].sum()
+            st.metric("💰 এই কোম্পানির মোট সর্বমোট খরচ (Total Expenses)", f"{total_expenses:,.1f} ৳")
+            st.markdown("---")
+            st.dataframe(exp_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("বর্তমানে এই কোম্পানির আন্ডারে কোনো খরচের রেকর্ড পাওয়া যায়নি।")
 elif current_action == "Others":
     st.markdown(f"### 📁 Others Account ({current_company})")
     st.info("💡 অন্যান্য ফুটকর বা বিবিধ হিসাবসমূহের ডেটা এন্ট্রি এখানে থাকবে।")
