@@ -467,9 +467,9 @@ st.sidebar.markdown("<hr style='margin: 10px 0px; border-color: #444;'>", unsafe
 menu_options_emp = ["Add New Employee", "Add Employee By Upload", "View All Employee"]
 
 # ------------------------------------------------------------------------------
-# ১. 📁 bKash মেইন ফোল্ডার (শুধু admin এবং bKas_User দেখতে পাবে)
+# ১. 📁 bKash মেইন ফোল্ডার (শুধু admin এবং bKash_User দেখতে পাবে)
 # ------------------------------------------------------------------------------
-if user_role in ["admin", "bKas_User", "bKash_User"]:
+if user_role in ["admin", "bKash_User", "bKash_User"]:
     with st.sidebar.expander("📁 bKash", expanded=(st.session_state.get('current_company') == "bKash")):
         
         # সাব-ফোল্ডার: Employee Management
@@ -588,7 +588,7 @@ if current_action is None:
 current_company = st.session_state.get('current_company', None)
 
 # 🚨 রোল-বেসড নিরাপত্তা লক (Direct Session State Check - কোনো NameError আসবে না)
-if st.session_state.get('current_company') == "bKash" and st.session_state.get('user_role') not in ["admin", "bKas_User", "bKash_User"]:
+if st.session_state.get('current_company') == "bKash" and st.session_state.get('user_role') not in ["admin", "bKash_User", "bKash_User"]:
     st.error("❌ এই সেকশনটি দেখার অনুমতি আপনার নেই!")
     st.stop()
 
