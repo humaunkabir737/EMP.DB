@@ -1480,6 +1480,9 @@ elif current_action == "Cash Management":
 # ==============================================================================
 # লজিক ০৪: Expense Management মডিউল (ডাইনামিক ক্যাটাগরি ও মাল্টি-রো গ্রিড সিস্টেম)
 # ==============================================================================
+# ==============================================================================
+# লজিক ০৪: Expense Management মডিউল (সম্পূর্ণ ফাঁকা ড্রপডাউন ও কলাম নোটসহ গ্রিড)
+# ==============================================================================
 elif current_action == "Expense Management":
     st.markdown(f"### 📉 Expense Management Module ({current_company})")
     st.markdown("💡 এই মডিউলের সমস্ত খরচ স্বয়ংক্রিয়ভাবে ক্যাশ খাতার **'Petty_Cash'** অ্যাকাউন্ট থেকে মাইনাস (Cash Out) হবে।")
@@ -1490,51 +1493,51 @@ elif current_action == "Expense Management":
         # তারিখ বাই ডিফল্ট আজকের ডেট থাকবে, তবে ইউজার চাইলে চেঞ্জ করতে পারবেন
         exp_date = st.date_input("📆 খরচের তারিখ (Date):", datetime.now().date(), key="expense_master_date")
         
-        # একবারে কয়টি খরচের লাইন দেখতে চান তার সিলেক্টর (ডিফল্ট ১০টি)
+        # একবারে কয়টি খরচের লাইন দেখতে চান তার সিলেক্টর
         num_rows = st.number_input("একসাথে কয়টি খরচ এন্ট্রি করতে চান?", min_value=1, max_value=25, value=10, step=1, key="expense_num_rows")
         st.markdown("---")
         
-        # ডাইনামিক ডিপেন্ডেন্ট ক্যাটাগরি ম্যাপিং ডিকশনারি
+        # ডাইনামিক ডিপেন্ডেন্ট ক্যাটাগরি ম্যাপিং (প্রথম আইটেম সম্পূর্ণ ফাঁকা "" রাখা হয়েছে যাতে অটো-ফিল না হয়)
         categories_map = {
-            "-- সিলেক্ট করুন --": ["-- প্রথমে টাইপ সিলেক্ট করুন --"],
+            "": [""],
             "ROI_Expences": [
-                "Electricity_Bill", "Entertainment", "House_Rent", "Internet", "Bike_Maintain", 
+                "", "Electricity_Bill", "Entertainment", "House_Rent", "Internet", "Bike_Maintain", 
                 "Repair", "Route_Cost", "Stationary", "Water_Bill", "Printing", 
                 "Financial_Expence", "Mobil_Change", "Salary", "bKash_Purpose", "Campaign", "Others"
             ],
             "Expences": [
-                "Entertainment", "Repair", "T.A", "Printing", "Campaign", "Cash_Pay", "Others"
+                "", "Entertainment", "Repair", "T.A", "Printing", "Campaign", "Cash_Pay", "Others"
             ],
             "Merchant": [
-                "Entertainment", "Repair", "T.A", "Printing", "Campaign", "Cash_Pay", "Stationary", "Others"
+                "", "Entertainment", "Repair", "T.A", "Printing", "Campaign", "Cash_Pay", "Stationary", "Others"
             ]
         }
         
-        # পাশাপাশি কলামের জন্য টেবিল হেডার তৈরি
+        # পাশাপাশি কলামের জন্য টেবিল হেডার তৈরি (নোট বা ডিরেকশনসহ)
         h1, h2, h3, h4 = st.columns([2.5, 3.5, 2, 4])
-        h1.markdown("**Expense Type**")
-        h2.markdown("**খাত (Expense Category):**")
-        h3.markdown("**পরিমাণ (Amount ৳):**")
-        h4.markdown("**বিস্তারিত বিবরণ (Remarks):**")
+        h1.markdown("**Expense Type** <br><span style='color:#888888; font-size:12px;'>(ক্লিক করে সিলেক্ট করুন)</span>", unsafe_allow_html=True)
+        h2.markdown("**খাত (Expense Category)** <br><span style='color:#888888; font-size:12px;'>(টাইপ সিলেক্টের পর ক্লিক করুন)</span>", unsafe_allow_html=True)
+        h3.markdown("**পরিমাণ (Amount ৳)** <br><span style='color:#888888; font-size:12px;'>(টাকার পরিমাণ লিখুন)</span>", unsafe_allow_html=True)
+        h4.markdown("**বিস্তারিত বিবরণ (Remarks)** <br><span style='color:#888888; font-size:12px;'>(খরচের বিবরণ লিখুন)</span>", unsafe_allow_html=True)
         
         expense_rows_data = []
         
-        # লুপের মাধ্যমে ডাইনামিক পাশাপাশি ৪টি কলাম জেনারেট করা
+        # লুপের মাধ্যমে ডাইনামিক রো জেনারেট করা
         for i in range(int(num_rows)):
             c1, c2, c3, c4 = st.columns([2.5, 3.5, 2, 4])
             
             with c1:
-                # ১ম কলাম: Expense Type ড্রপডাউন
+                # ১ম কলাম: Expense Type (ডিফল্ট ফাঁকা থাকবে, ক্লিক করলে আইটেম আসবে)
                 exp_type = st.selectbox(
                     f"Type_{i}", 
-                    ["-- সিলেক্ট করুন --", "ROI_Expences", "Expences", "Merchant"], 
+                    ["", "ROI_Expences", "Expences", "Merchant"], 
                     key=f"exp_type_{i}", 
                     label_visibility="collapsed"
                 )
                 
             with c2:
-                # ২য় কলাম: Expense Type এর ওপর ভিত্তি করে ডাইনামিক ক্যাটাগরি লোড হওয়া
-                available_categories = categories_map.get(exp_type, ["-- প্রথমে টাইপ সিলেক্ট করুন --"])
+                # ২য় কলাম: Expense Category (টাইপ সিলেক্ট করার আগ পর্যন্ত এবং সিলেক্ট করার পরেও শুরুতে ফাঁকা থাকবে)
+                available_categories = categories_map.get(exp_type, [""])
                 cat = st.selectbox(
                     f"Cat_{i}", 
                     available_categories, 
@@ -1543,25 +1546,27 @@ elif current_action == "Expense Management":
                 )
                 
             with c3:
-                # ৩য় কলাম: খরচের পরিমাণ
+                # ৩য় কলাম: খরচের পরিমাণ (value=None ব্যবহারের ফলে এটি ডিফল্ট একদম ফাঁকা থাকবে)
                 amt = st.number_input(
                     f"Amt_{i}", 
                     min_value=0.0, 
                     step=50.0, 
+                    value=None,
                     key=f"exp_amt_{i}", 
                     label_visibility="collapsed"
                 )
                 
             with c4:
-                # ৪র্থ কলাম: খরচের বিবরণ বা রিমার্কস
+                # ৪র্থ কলাম: খরচের বিবরণ (value="" দেওয়ার কারণে সম্পূর্ণ খালি থাকবে)
                 rem = st.text_input(
                     f"Rem_{i}", 
+                    value="",
                     key=f"exp_rem_{i}", 
                     label_visibility="collapsed", 
-                    placeholder=f"{i+1} নং লাইনের বিবরণ..."
+                    placeholder="এখানে লিখুন..."
                 )
             
-            # ডাটা প্রসেসিংয়ের জন্য অ্যারেতে সেভ রাখা
+            # ডাটা প্রসেসিং লিস্টে যুক্ত করা
             expense_rows_data.append((exp_type, cat, amt, rem))
             
         st.markdown("---")
@@ -1572,11 +1577,10 @@ elif current_action == "Expense Management":
             conn = sqlite3.connect(DB_NAME)
             cursor = conn.cursor()
             
-            # ইনপুট ভ্যালিডেশন লুপ
+            # ডেটাবেজ পুশ লুপ ও স্মার্ট ভ্যালিডেশন
             for exp_type, cat, amt, rem in expense_rows_data:
-                # শুধুমাত্র যে ঘরগুলোতে টাইপ সিলেক্টেড, ক্যাটাগরি ভ্যালিড এবং অ্যামাউন্ট ০ থেকে বেশি, সেগুলোই সেভ হবে
-                if exp_type != "-- সিলেক্ট করুন --" and cat != "-- প্রথমে টাইপ সিলেক্ট করুন --" and amt > 0:
-                    # রিমার্কস কলামে টাইপ এবং ক্যাটাগরি একসাথে ট্যাগ করে দেওয়া হচ্ছে স্পষ্ট ট্র্যাকিংয়ের জন্য
+                # ফাঁকা ঘরগুলো বাদ দিয়ে শুধুমাত্র পূরণ করা সারিগুলো ডাটাবেজে এন্ট্রি হবে
+                if exp_type != "" and cat != "" and amt is not None and amt > 0:
                     formatted_remarks = f"[{exp_type} -> {cat}] {rem}".strip()
                     
                     cursor.execute("""
@@ -1615,8 +1619,6 @@ elif current_action == "Expense Management":
             st.dataframe(exp_df, use_container_width=True, hide_index=True)
         else:
             st.info("বর্তমানে এই কোম্পানির আন্ডারে কোনো খরচের রেকর্ড পাওয়া যায়নি।")
-elif current_action == "Others":
-    st.markdown(f"### 📁 Others Account ({current_company})")
     st.info("💡 অন্যান্য ফুটকর বা বিবিধ হিসাবসমূহের ডেটা এন্ট্রি এখানে থাকবে।")
 
 # ==============================================================================
