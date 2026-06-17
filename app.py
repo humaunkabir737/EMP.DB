@@ -560,6 +560,20 @@ render_header()
 # ৮. অ্যাকশন এক্সিকিউশন লজিক (Main Body Router)
 # ==============================================================================
 if current_action is None:
+    user_role = st.session_state.get('user_role', None)
+current_company = st.session_state.get('current_company', None)
+
+if current_company == "bKash" and user_role not in ["admin", "bKas_User"]:
+    st.error("❌ এই সেকশনটি দেখার অনুমতি আপনার নেই!")
+    st.stop()
+
+if current_company == "GP" and user_role not in ["admin", "GP_User"]:
+    st.error("❌ এই সেকশনটি দেখার অনুমতি আপনার নেই!")
+    st.stop()
+
+# 👆 [পেস্ট করা শেষ]
+
+if current_action is None:
     st.markdown("<h2 style='text-align: center; font-family: \"Times New Roman\", serif; font-weight: bold;'>M/S JABED ENTERPRISE</h2>", unsafe_allow_html=True)
     st.markdown("<h4 style='text-align: center; color: #a0a0a0;'>ড্যাশবোর্ড সিস্টেমে আপনাকে স্বাগতম!</h4>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
