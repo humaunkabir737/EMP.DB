@@ -37,26 +37,29 @@ if not st.session_state.logged_in:
                 if username == "admin" and password == "jabed2026":
                     st.session_state.logged_in = True
                     st.session_state.user_role = "admin"
+                    st.session_state.current_action = None # 👈 নিরাপদে রিফ্রেশ করার জন্য এখানেও যোগ করা হলো
                     st.success("এডমিন হিসেবে লগইন সফল হয়েছে!")
                     import time
                     time.sleep(0.5)
                     st.rerun()
                 
                 # ২. বিকাশ ইউজার (শুধু বিকাশ ফোল্ডার দেখতে পাবেন)
-                elif username == "bKas_User" and password == "bkash2026": # 👈 এখানে আপনার পছন্দমতো পাসওয়ার্ড দিন
+                elif username == "bKas_User" and password == "bkash2026": 
                     st.session_state.logged_in = True
                     st.session_state.user_role = "bKas_User"
-                    st.session_state.current_company = "bKash" # ডিফল্ট কোম্পানি সেট
+                    st.session_state.current_company = "bKash" 
+                    st.session_state.current_action = None # 👈 🔴 এই নতুন লাইনটি যোগ করা হলো
                     st.success("বিকাশ ইউজার লগইন সফল!")
                     import time
                     time.sleep(0.5)
                     st.rerun()
                 
                 # ৩. জিপি ইউজার (শুধু জিপি ফোল্ডার দেখতে পাবেন)
-                elif username == "GP_User" and password == "gp2026": # 👈 এখানে আপনার পছন্দমতো পাসওয়ার্ড দিন
+                elif username == "GP_User" and password == "gp2026": 
                     st.session_state.logged_in = True
                     st.session_state.user_role = "GP_User"
-                    st.session_state.current_company = "GP" # ডিফল্ট কোম্পানি সেট
+                    st.session_state.current_company = "GP" 
+                    st.session_state.current_action = None # 👈 🔴 এই নতুন লাইনটি যোগ করা হলো
                     st.success("GP ইউজার লগইন সফল!")
                     import time
                     time.sleep(0.5)
