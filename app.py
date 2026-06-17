@@ -447,116 +447,138 @@ def show_employee_details(emp_id, company):
                     st.rerun()
 
 # ==============================================================================
-# ৭. সাইডবার ন্যাভিগেশন মেনু (ট্রি স্ট্রাকচার ও ইমেজভিত্তিক বিন্যাস)
+# ৭. সাইডবার ন্যাভিগেশন মেনু (রোল অনুযায়ী কঠোর ফিল্টারিং)
 # ==============================================================================
 st.sidebar.markdown("## Main Menu")
-st.sidebar.markdown("### স্বাগতম, <span style='color:#10b981;'>admin</span> 👋", unsafe_allow_html=True)
+user_role = st.session_state.get('user_role', None)
 
+# লগইন করা ইউজারের নাম ডাইনামিক্যালি দেখাবে
+st.sidebar.markdown(f"### স্বাগতম, <span style='color:#10b981;'>{user_role}</span> 👋", unsafe_allow_html=True)
+
+# লগআউট বাটন (সব ইউজারই দেখতে পাবে)
 if st.sidebar.button("🔒 লগআউট (Logout)", use_container_width=True):
     st.session_state.logged_in = False
+    st.session_state.user_role = None
+    st.session_state.current_company = None
+    st.session_state.current_action = None
     st.rerun()
 
 st.sidebar.markdown("<hr style='margin: 10px 0px; border-color: #444;'>", unsafe_allow_html=True)
 menu_options_emp = ["Add New Employee", "Add Employee By Upload", "View All Employee"]
 
 # ------------------------------------------------------------------------------
-# ১. 📁 bKash মেইন ফোল্ডার
+# ১. 📁 bKash মেইন ফোল্ডার (শুধু admin এবং bKas_User দেখতে পাবে)
 # ------------------------------------------------------------------------------
-with st.sidebar.expander("📁 bKash", expanded=(st.session_state.current_company == "bKash")):
-    
-    # সাব-ফোল্ডার: Employee Management
-    with st.expander("📁 Employee Management", expanded=False):
-        bk_default = menu_options_emp.index(st.session_state.current_action) if (st.session_state.current_company == "bKash" and st.session_state.current_action in menu_options_emp) else None
-        def bk_emp_cb():
-            st.session_state.current_company = "bKash"
-            st.session_state.current_action = st.session_state.bk_emp_radio
-        st.radio("bKash Emp Options", options=menu_options_emp, index=bk_default, key="bk_emp_radio", on_change=bk_emp_cb, label_visibility="collapsed")
+if user_role in ["admin", "bKas_User", "bKash_User"]:
+    with st.sidebar.expander("📁 bKash", expanded=(st.session_state.get('current_company') == "bKash")):
         
-    # সাব-ফোল্ডার: Sales Management
-    with st.expander("💰 Sales Management", expanded=False):
-        st.caption("Sales features coming soon...")
+        # সাব-ফোল্ডার: Employee Management
+        with st.expander("📁 Employee Management", expanded=False):
+            bk_default = menu_options_emp.index(st.session_state.current_action) if (st.session_state.get('current_company') == "bKash" and st.session_state.get('current_action') in menu_options_emp) else None
+            def bk_emp_cb():
+                st.session_state.current_company = "bKash"
+                st.session_state.current_action = st.session_state.bk_emp_radio
+            st.radio("bKash Emp Options", options=menu_options_emp, index=bk_default, key="bk_emp_radio", on_change=bk_emp_cb, label_visibility="collapsed")
+            
+        # সাব-ফোল্ডার: Sales Management
+        with st.expander("💰 Sales Management", expanded=False):
+            st.caption("Sales features coming soon...")
+            
+        # সাব-ফোল্ডার: Accounts Management
+        with st.expander("📊 Account Management", expanded=False):
+            if st.button("💵 Cash Management", key="bk_cash_btn", use_container_width=True):
+                st.session_state.current_company = "bKash"
+                st.session_state.current_action = "Cash Management"
+                st.rerun()
+            if st.button("📉 Expense Management", key="bk_exp_btn", use_container_width=True):
+                st.session_state.current_company = "bKash"
+                st.session_state.current_action = "Expense Management"
+                st.rerun()
+                
+            # 👥 নেস্টেড সাব-ফোল্ডার: Second Party Management
+            with st.expander("👥 Second Party Management", expanded=False):
+                if st.button("➕ Add New Second Party", key="bk_add_sp_btn", use_container_width=True):
+                    st.session_state.current_company = "bKash"
+                    st.session_state.current_action = "Add New Second Party"
+                    st.rerun()
+                if st.button("📋 View All Second Parties", key="bk_view_sp_btn", use_container_width=True):
+                    st.session_state.current_company = "bKash"
+                    st.session_state.current_action = "View All Second Parties"
+                    st.rerun()
+                
+        # সাব-ফোল্ডার: Others
+        with st.expander("📁 Others", expanded=False):
+            if st.button("📁 Others Account", key="bk_oth_btn", use_container_width=True):
+                st.session_state.current_company = "bKash"
+                st.session_state.current_action = "Others"
+                st.rerun()
+
+# ------------------------------------------------------------------------------
+# ২. 📁 GP মেইন ফোল্ডার (শুধু admin এবং GP_User দেখতে পাবে)
+# ------------------------------------------------------------------------------
+if user_role in ["admin", "GP_User"]:
+    with st.sidebar.expander("📁 GP", expanded=(st.session_state.get('current_company') == "GP")):
         
-    # সাব-ফোল্ডার: Accounts Management
-    with st.expander("📊 Account Management", expanded=False):
-        if st.button("💵 Cash Management", key="bk_cash_btn", use_container_width=True):
-            st.session_state.current_company = "bKash"
-            st.session_state.current_action = "Cash Management"
-            st.rerun()
-        if st.button("📉 Expense Management", key="bk_exp_btn", use_container_width=True):
-            st.session_state.current_company = "bKash"
-            st.session_state.current_action = "Expense Management"
-            st.rerun()
+        # সাব-ফোল্ডার: Employee Management
+        with st.expander("📁 Employee Management", expanded=False):
+            gp_default = menu_options_emp.index(st.session_state.current_action) if (st.session_state.get('current_company') == "GP" and st.session_state.get('current_action') in menu_options_emp) else None
+            def gp_emp_cb():
+                st.session_state.current_company = "GP"
+                st.session_state.current_action = st.session_state.gp_emp_radio
+            st.radio("GP Emp Options", options=menu_options_emp, index=gp_default, key="gp_emp_radio", on_change=gp_emp_cb, label_visibility="collapsed")
             
-        # 👥 নেস্টেড সাব-ফোল্ডার: Second Party Management (বিকাশের ভেতরে)
-        with st.expander("👥 Second Party Management", expanded=False):
-            if st.button("➕ Add New Second Party", key="bk_add_sp_btn", use_container_width=True):
-                st.session_state.current_company = "bKash"
-                st.session_state.current_action = "Add New Second Party"
-                st.rerun()
-            if st.button("📋 View All Second Parties", key="bk_view_sp_btn", use_container_width=True):
-                st.session_state.current_company = "bKash"
-                st.session_state.current_action = "View All Second Parties"
-                st.rerun()
+        # সাব-ফোল্ডার: Sales Management
+        with st.expander("💰 Sales Management", expanded=False):
+            st.caption("Sales features coming soon...")
             
-    # সাব-ফোল্ডার: Others
-    with st.expander("📁 Others", expanded=False):
-        if st.button("📁 Others Account", key="bk_oth_btn", use_container_width=True):
-            st.session_state.current_company = "bKash"
+        # সাব-ফোল্ডার: Accounts Management
+        with st.expander("📊 Account Management", expanded=False):
+            if st.button("💵 Cash Management", key="gp_cash_btn", use_container_width=True):
+                st.session_state.current_company = "GP"
+                st.session_state.current_action = "Cash Management"
+                st.rerun()
+            if st.button("📉 Expense Management", key="gp_exp_btn", use_container_width=True):
+                st.session_state.current_company = "GP"
+                st.session_state.current_action = "Expense Management"
+                st.rerun()
+                
+            # 👥 নেস্টেড সাব-ফোল্ডার: Second Party Management
+            with st.expander("👥 Second Party Management", expanded=False):
+                if st.button("➕ Add New Second Party", key="gp_add_sp_btn", use_container_width=True):
+                    st.session_state.current_company = "GP"
+                    st.session_state.current_action = "Add New Second Party"
+                    st.rerun()
+                if st.button("📋 View All Second Parties", key="gp_view_sp_btn", use_container_width=True):
+                    st.session_state.current_company = "GP"
+                    st.session_state.current_action = "View All Second Parties"
+                    st.rerun()
+                
+        # সাব-ফোল্ডার: Others
+        with st.expander("📁 Others", expanded=False):
+            if st.button("📁 Others Account", key="gp_oth_btn", use_container_width=True):
+                st.session_state.current_company = "GP"
+                st.session_state.current_action = "Others"
+                st.rerun()
+
+# ------------------------------------------------------------------------------
+# ৩. 📁 Others মেইন ফোল্ডার (🚨 শুধু admin দেখতে পাবে)
+# ------------------------------------------------------------------------------
+if user_role == "admin":
+    with st.sidebar.expander("📁 Others", expanded=False):
+        if st.button("📁 Others Account", key="main_oth_btn", use_container_width=True):
+            st.session_state.current_company = "Others"
             st.session_state.current_action = "Others"
             st.rerun()
 
 # ------------------------------------------------------------------------------
-# ২. 📁 GP মেইন ফোল্ডার
+# ৪. ⚙️ পাসওয়ার্ড রিসেট প্যানেল (🚨 শুধু admin দেখতে পাবে)
 # ------------------------------------------------------------------------------
-with st.sidebar.expander("📁 GP", expanded=(st.session_state.current_company == "GP")):
-    
-    # সাব-ফোল্ডার: Employee Management
-    with st.expander("📁 Employee Management", expanded=False):
-        gp_default = menu_options_emp.index(st.session_state.current_action) if (st.session_state.current_company == "GP" and st.session_state.current_action in menu_options_emp) else None
-        def gp_emp_cb():
-            st.session_state.current_company = "GP"
-            st.session_state.current_action = st.session_state.gp_emp_radio
-        st.radio("GP Emp Options", options=menu_options_emp, index=gp_default, key="gp_emp_radio", on_change=gp_emp_cb, label_visibility="collapsed")
-        
-    # সাব-ফোল্ডার: Sales Management
-    with st.expander("💰 Sales Management", expanded=False):
-        st.caption("Sales features coming soon...")
-        
-    # সাব-ফোল্ডার: Accounts Management
-    with st.expander("📊 Account Management", expanded=False):
-        if st.button("💵 Cash Management", key="gp_cash_btn", use_container_width=True):
-            st.session_state.current_company = "GP"
-            st.session_state.current_action = "Cash Management"
-            st.rerun()
-        if st.button("📉 Expense Management", key="gp_exp_btn", use_container_width=True):
-            st.session_state.current_company = "GP"
-            st.session_state.current_action = "Expense Management"
-            st.rerun()
-            
-        # 👥 নেস্টেড সাব-ফোল্ডার: Second Party Management (জিপি-র ভেতরে)
-        with st.expander("👥 Second Party Management", expanded=False):
-            if st.button("➕ Add New Second Party", key="gp_add_sp_btn", use_container_width=True):
-                st.session_state.current_company = "GP"
-                st.session_state.current_action = "Add New Second Party"
-                st.rerun()
-            if st.button("📋 View All Second Parties", key="gp_view_sp_btn", use_container_width=True):
-                st.session_state.current_company = "GP"
-                st.session_state.current_action = "View All Second Parties"
-                st.rerun()
-            
-    # সাব-ফোল্ডার: Others
-    with st.expander("📁 Others", expanded=False):
-        if st.button("📁 Others Account", key="gp_oth_btn", use_container_width=True):
-            st.session_state.current_company = "GP"
-            st.session_state.current_action = "Others"
-            st.rerun()
+if user_role == "admin":
+    with st.sidebar.expander("⚙️ পাসওয়ার্ড রিসেট প্যানেল (Admin)", expanded=False):
+        # 💡 আপনার পাসওয়ার্ড রিসেট প্যানেলের ভেতরের কোডটুকু এখানে থাকবে
+        st.write("Password reset features here...")
 
 st.sidebar.markdown("---")
-
-current_company = st.session_state.current_company
-current_action = st.session_state.current_action
-
-render_header()
 
 # ==============================================================================
 # ৮. অ্যাকশন এক্সিকিউশন লজিক (Main Body Router)
