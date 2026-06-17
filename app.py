@@ -1477,6 +1477,9 @@ elif current_action == "Cash Management":
 # ==============================================================================
 # লজিক ০৪: Expense Management মডিউল (মাল্টি-রো পাশাপাশি কলাম এন্ট্রি সিস্টেম)
 # ==============================================================================
+# ==============================================================================
+# লজিক ০৪: Expense Management মডিউল (ডাইনামিক ক্যাটাগরি ও মাল্টি-রো গ্রিড সিস্টেম)
+# ==============================================================================
 elif current_action == "Expense Management":
     st.markdown(f"### 📉 Expense Management Module ({current_company})")
     st.markdown("💡 এই মডিউলের সমস্ত খরচ স্বয়ংক্রিয়ভাবে ক্যাশ খাতার **'Petty_Cash'** অ্যাকাউন্ট থেকে মাইনাস (Cash Out) হবে।")
@@ -1484,68 +1487,114 @@ elif current_action == "Expense Management":
     exp_tab1, exp_tab2 = st.tabs(["📥 একসাথে একাধিক খরচ এন্ট্রি করুন", "📖 খরচের খতিয়ান ও রিপোর্ট"])
 
     with exp_tab1:
-        # একবারে কয়টি খরচের লাইন দেখতে চান তা সিলেক্ট করার অপশন (ডিফল্ট ১০টি, চাইলে ১৫ বা ২০টি করা যাবে)
-        num_rows = st.number_input("একসাথে কয়টি খরচ এন্ট্রি করতে চান? (১০/১৫ টি)", min_value=1, max_value=25, value=10, step=1)
+        # তারিখ বাই ডিফল্ট আজকের ডেট থাকবে, তবে ইউজার চাইলে চেঞ্জ করতে পারবেন
+        exp_date = st.date_input("📆 খরচের তারিখ (Date):", datetime.now().date(), key="expense_master_date")
         
-        with st.form("multi_expense_entry_form", clear_on_submit=True):
-            # তারিখ বাই ডিফল্ট আজকের ডেট থাকবে, তবে ইউজার চাইলে চেঞ্জ করতে পারবেন
-            exp_date = st.date_input("📆 খরচের তারিখ (Date):", datetime.now().date())
-            st.markdown("---")
-            
-            # পাশাপাশি কলামের জন্য টেবিল হেডার তৈরি
-            h1, h2, h3 = st.columns([3, 2, 5])
-            h1.markdown("**খাত (Expense Category):**")
-            h2.markdown("**খরচের পরিমাণ (Amount ৳):**")
-            h3.markdown("**খরচের বিস্তারিত বিবরণ (Remarks):**")
-            
-            expense_rows_data = []
-            categories_options = [
-                "-- সিলেক্ট করুন --", "Operation Expense", "Office Rent", 
-                "Entertainment (চা-নাস্তা)", "Conveyance (যাতায়াত)", 
-                "Fuel & Transport", "Staff Salary", "Utilities (বিদ্যুৎ বিল)", "Others Expense"
+        # একবারে কয়টি খরচের লাইন দেখতে চান তার সিলেক্টর (ডিফল্ট ১০টি)
+        num_rows = st.number_input("একসাথে কয়টি খরচ এন্ট্রি করতে চান?", min_value=1, max_value=25, value=10, step=1, key="expense_num_rows")
+        st.markdown("---")
+        
+        # ডাইনামিক ডিপেন্ডেন্ট ক্যাটাগরি ম্যাপিং ডিকশনারি
+        categories_map = {
+            "-- সিলেক্ট করুন --": ["-- প্রথমে টাইপ সিলেক্ট করুন --"],
+            "ROI_Expences": [
+                "Electricity_Bill", "Entertainment", "House_Rent", "Internet", "Bike_Maintain", 
+                "Repair", "Route_Cost", "Stationary", "Water_Bill", "Printing", 
+                "Financial_Expence", "Mobil_Change", "Salary", "bKash_Purpose", "Campaign", "Others"
+            ],
+            "Expences": [
+                "Entertainment", "Repair", "T.A", "Printing", "Campaign", "Cash_Pay", "Others"
+            ],
+            "Merchant": [
+                "Entertainment", "Repair", "T.A", "Printing", "Campaign", "Cash_Pay", "Stationary", "Others"
             ]
+        }
+        
+        # পাশাপাশি কলামের জন্য টেবিল হেডার তৈরি
+        h1, h2, h3, h4 = st.columns([2.5, 3.5, 2, 4])
+        h1.markdown("**Expense Type**")
+        h2.markdown("**খাত (Expense Category):**")
+        h3.markdown("**পরিমাণ (Amount ৳):**")
+        h4.markdown("**বিস্তারিত বিবরণ (Remarks):**")
+        
+        expense_rows_data = []
+        
+        # লুপের মাধ্যমে ডাইনামিক পাশাপাশি ৪টি কলাম জেনারেট করা
+        for i in range(int(num_rows)):
+            c1, c2, c3, c4 = st.columns([2.5, 3.5, 2, 4])
             
-            # লুপের মাধ্যমে নির্দিষ্ট সংখ্যক রো-কে পাশাপাশি কলামে রেন্ডার করা
-            for i in range(int(num_rows)):
-                c1, c2, c3 = st.columns([3, 2, 5])
-                with c1:
-                    cat = st.selectbox(f"Category_{i}", categories_options, key=f"exp_cat_{i}", label_visibility="collapsed")
-                with c2:
-                    amt = st.number_input(f"Amount_{i}", min_value=0.0, step=50.0, key=f"exp_amt_{i}", label_visibility="collapsed")
-                with c3:
-                    rem = st.text_input(f"Remarks_{i}", key=f"exp_rem_{i}", label_visibility="collapsed", placeholder=f"{i+1} নং খরচের বিবরণ লিখুন...")
+            with c1:
+                # ১ম কলাম: Expense Type ড্রপডাউন
+                exp_type = st.selectbox(
+                    f"Type_{i}", 
+                    ["-- সিলেক্ট করুন --", "ROI_Expences", "Expences", "Merchant"], 
+                    key=f"exp_type_{i}", 
+                    label_visibility="collapsed"
+                )
                 
-                # ডেটাগুলো লিস্টে জমা রাখা
-                expense_rows_data.append((cat, amt, rem))
+            with c2:
+                # ২য় কলাম: Expense Type এর ওপর ভিত্তি করে ডাইনামিক ক্যাটাগরি লোড হওয়া
+                available_categories = categories_map.get(exp_type, ["-- প্রথমে টাইপ সিলেক্ট করুন --"])
+                cat = st.selectbox(
+                    f"Cat_{i}", 
+                    available_categories, 
+                    key=f"exp_cat_{i}", 
+                    label_visibility="collapsed"
+                )
+                
+            with c3:
+                # ৩য় কলাম: খরচের পরিমাণ
+                amt = st.number_input(
+                    f"Amt_{i}", 
+                    min_value=0.0, 
+                    step=50.0, 
+                    key=f"exp_amt_{i}", 
+                    label_visibility="collapsed"
+                )
+                
+            with c4:
+                # ৪র্থ কলাম: খরচের বিবরণ বা রিমার্কস
+                rem = st.text_input(
+                    f"Rem_{i}", 
+                    key=f"exp_rem_{i}", 
+                    label_visibility="collapsed", 
+                    placeholder=f"{i+1} নং লাইনের বিবরণ..."
+                )
             
-            st.markdown("---")
-            submit_all_expenses = st.form_submit_button("💾 সকল খরচ একসাথে সাবমিট করুন", use_container_width=True)
+            # ডাটা প্রসেসিংয়ের জন্য অ্যারেতে সেভ রাখা
+            expense_rows_data.append((exp_type, cat, amt, rem))
             
-            if submit_all_expenses:
-                valid_entries = 0
-                conn = sqlite3.connect(DB_NAME)
-                cursor = conn.cursor()
-                
-                # লুপ চালিয়ে শুধুমাত্র ফিল্ডআপ করা ডেটাগুলো ডাটাবেজে পাঠানো
-                for cat, amt, rem in expense_rows_data:
-                    if cat != "-- সিলেক্ট করুন --" and amt > 0:
-                        formatted_remarks = f"[{cat}] {rem}".strip()
-                        cursor.execute("""
-                            INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks)
-                            VALUES (?, ?, 'Petty_Cash', 'Cash Out', ?, ?)
-                        """, (str(exp_date), current_company, amt, formatted_remarks))
-                        valid_entries += 1
-                        
-                conn.commit()
-                conn.close()
-                
-                if valid_entries > 0:
-                    st.toast(f"🎉 সফলভাবে মোট {valid_entries}টি খরচ সংরক্ষিত এবং Petty_Cash থেকে কর্তন করা হয়েছে!", icon="📉")
-                    import time
-                    time.sleep(0.5)
-                    st.rerun()
-                else:
-                    st.error("❌ কোনো খরচ সংরক্ষণ করা হয়নি! দয়া করে কমপক্ষে একটি লাইনে খাত সিলেক্ট করুন এবং সঠিক পরিমাণ ইনপুট দিন।")
+        st.markdown("---")
+        submit_all_expenses = st.button("💾 সকল খরচ একসাথে সাবমিট করুন", type="primary", use_container_width=True)
+        
+        if submit_all_expenses:
+            valid_entries = 0
+            conn = sqlite3.connect(DB_NAME)
+            cursor = conn.cursor()
+            
+            # ইনপুট ভ্যালিডেশন লুপ
+            for exp_type, cat, amt, rem in expense_rows_data:
+                # শুধুমাত্র যে ঘরগুলোতে টাইপ সিলেক্টেড, ক্যাটাগরি ভ্যালিড এবং অ্যামাউন্ট ০ থেকে বেশি, সেগুলোই সেভ হবে
+                if exp_type != "-- সিলেক্ট করুন --" and cat != "-- প্রথমে টাইপ সিলেক্ট করুন --" and amt > 0:
+                    # রিমার্কস কলামে টাইপ এবং ক্যাটাগরি একসাথে ট্যাগ করে দেওয়া হচ্ছে স্পষ্ট ট্র্যাকিংয়ের জন্য
+                    formatted_remarks = f"[{exp_type} -> {cat}] {rem}".strip()
+                    
+                    cursor.execute("""
+                        INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks)
+                        VALUES (?, ?, 'Petty_Cash', 'Cash Out', ?, ?)
+                    """, (str(exp_date), current_company, amt, formatted_remarks))
+                    valid_entries += 1
+                    
+            conn.commit()
+            conn.close()
+            
+            if valid_entries > 0:
+                st.toast(f"🎉 সফলভাবে মোট {valid_entries}টি খরচ সংরক্ষিত এবং Petty_Cash থেকে কর্তন করা হয়েছে!", icon="📉")
+                import time
+                time.sleep(0.5)
+                st.rerun()
+            else:
+                st.error("❌ কোনো খরচ সংরক্ষণ করা হয়নি! দয়া করে কমপক্ষে একটি সারিতে Expense Type ও Category সিলেক্ট করে সঠিক পরিমাণ দিন।")
 
     with exp_tab2:
         st.markdown("##### 📊 আপনার কোম্পানির খরচ সমূহের তালিকা (Petty Cash Ledger)")
@@ -1561,7 +1610,7 @@ elif current_action == "Expense Management":
         
         if not exp_df.empty:
             total_expenses = exp_df['খরচের পরিমাণ (৳)'].sum()
-            st.metric("💰 এই কোম্পানির মোট সর্বমোট খরচ (Total Expenses)", f"{total_expenses:,.1f} ৳")
+            st.metric("💰 এই কোম্পানির সর্বমোট খরচ (Total Expenses)", f"{total_expenses:,.1f} ৳")
             st.markdown("---")
             st.dataframe(exp_df, use_container_width=True, hide_index=True)
         else:
