@@ -44,9 +44,9 @@ if not st.session_state.logged_in:
                     st.rerun()
                 
                 # ২. বিকাশ ইউজার (শুধু বিকাশ ফোল্ডার দেখতে পাবেন)
-                elif username == "bKas_User" and password == "bkash2026": 
+                elif username == "bKash_User" and password == "bkash2026": 
                     st.session_state.logged_in = True
-                    st.session_state.user_role = "bKas_User"
+                    st.session_state.user_role = "bKash_User"
                     st.session_state.current_company = "bKash" 
                     st.session_state.current_action = None # 👈 🔴 এই নতুন লাইনটি যোগ করা হলো
                     st.success("বিকাশ ইউজার লগইন সফল!")
@@ -565,7 +565,7 @@ if current_action is None:
     user_role = st.session_state.get('user_role', None)
 current_company = st.session_state.get('current_company', None)
 
-if current_company == "bKash" and user_role not in ["admin", "bKas_User"]:
+if current_company == "bKash" and user_role not in ["admin", "bKash_User"]:
     st.error("❌ এই সেকশনটি দেখার অনুমতি আপনার নেই!")
     st.stop()
 
