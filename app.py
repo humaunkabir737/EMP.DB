@@ -419,7 +419,7 @@ def show_employee_details(emp_id, company):
                     if new_emp_nid_img:
                         Image.open(new_emp_nid_img).save(emp_nid_path)
                     if new_guar_img:
-                        Image.open(guar_img).save(guar_photo_path)
+                        Image.open(new_guar_img).save(guar_photo_path)
                     if new_guar_nid_img:
                         Image.open(new_guar_nid_img).save(guar_nid_path)
                         
