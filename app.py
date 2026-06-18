@@ -426,7 +426,7 @@ current_company = st.session_state.get('current_company', None)
 render_header()
 
 if current_action is None:
-    st.markdown("<h3 style='text-align: center; color: #10b981;'>ড্যাশবোর্ড系统中 আপনাকে স্বাগতম!</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #10b981;'>ড্যাশবোর্ডে আপনাকে স্বাগতম!</h3>", unsafe_allow_html=True)
     st.info("💡 কাজ শুরু করতে বাম পাশের সাইডবার মেনু থেকে কোম্পানির নির্দিষ্ট ফোল্ডার এক্সপ্যান্ড করে কাঙ্ক্ষিত অপশনটি সিলেক্ট করুন।")
 
 elif current_action == "Add New Employee":
