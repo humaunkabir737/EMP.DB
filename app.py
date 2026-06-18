@@ -83,44 +83,6 @@ elif page == "emp":
     with t2: st.write("List...")
     with t3: st.write("Upload...")
 
-
-# ==============================================================================
-# ৪. গ্লোবাল সেশন স্টেট এবং হেল্পার ফাংশন
-# ==============================================================================
-for state_key, default_val in [('current_company', 'None'), ('current_action', None), ('active_emp_id', None), ('dialog_edit_mode', False), ('active_party_id', None), ('party_edit_mode', False)]:
-    if state_key not in st.session_state:
-        st.session_state[state_key] = default_val
-
-def open_edit_mode(): st.session_state.dialog_edit_mode = True
-def close_edit_mode(): st.session_state.dialog_edit_mode = False
-
-# রিয়েল-টাইম পূর্ববর্তী দিন পর্যন্ত মোট ক্লোজিং ব্যালেন্স তথা ওপেনিং ভল্ট ক্যাশ ক্যালকুলেটর
-def get_opening_vault_cash(company, target_date_str):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT 
-            SUM(CASE WHEN type='Cash In' THEN amount ELSE 0 END) - 
-            SUM(CASE WHEN type='Cash Out' THEN amount ELSE 0 END)
-        FROM cash_transactions 
-        WHERE company=? AND date < ?
-    """, (company, target_date_str))
-    result = cursor.fetchone()[0]
-    conn.close()
-    return float(result) if result else 0.0
-
-# নো-ইমেজ ফ্রেম জেনারেটর
-def render_no_image_frame(title):
-    return f"""
-    <div style="border: 2px dashed #444444; border-radius: 8px; background-color: #1e1e1e; 
-                height: 145px; display: flex; flex-direction: column; justify-content: center; 
-                align-items: center; color: #888888; text-align: center; margin-bottom: 15px; padding: 5px;">
-        <span style="font-size: 26px; margin-bottom: 2px;">🖼️</span>
-        <b style="font-size: 13px; color: #cccccc;">No Image</b>
-        <span style="font-size: 11px; color: #666666; margin-top: 2px;">({title})</span>
-    </div>
-    """
-
 # ==============================================================================
 # ৫. হেডার ডিজাইন
 # ==============================================================================
