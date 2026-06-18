@@ -686,7 +686,7 @@ elif current_action == "Cash Management":
     # 🔴 ডান কলাম: PAY OUT (খরচ/প্রদান)
     # ----------------------------------------------------------------------
     with main_col2:
-        st.markdown('<div class="hdr-red">🛸 PAY OUT (খরচ/প্রদান)</div>', unsafe_allow_html=True)      
+        st.markdown('<div class="hdr-red">🛸 PAY OUT </div>', unsafe_allow_html=True)      
         # Vault Cash (ক্যালকুলেটেড টেক্সট রো)
         r_r1_c1, r_r1_c2 = st.columns([7, 5])
         r_r1_c1.markdown('<div class="meta-label-vertical">Vault Cash:</div>', unsafe_allow_html=True)
@@ -703,7 +703,7 @@ elif current_action == "Cash Management":
         m_due = r_r4_c2.number_input("Others Due Input", min_value=0.0, step=1.0, value=0.0, label_visibility="collapsed", key="m_inp_due")
         st.markdown('<hr class="meta-hr">', unsafe_allow_html=True)
         # Total Closing Cash হোল্ডার
-        r_r5_c1, r_r5_c2 = st.columns([7, 5])
+        r_r5_c1, r_r5_c2 = st.columns([7, 3])
         r_r5_c1.markdown('<div class="summary-label-vertical" style="color:#ff5555; font-weight:bold;">Total Closing Cash:</div>', unsafe_allow_html=True)
         placeholder_total_closing_text = r_r5_c2.empty()
         # Today's Pay Out ও Grand Total হোল্ডার
