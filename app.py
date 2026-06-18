@@ -670,24 +670,18 @@ elif current_action == "Cash Management":
         l_r2_c1, l_r2_c2 = st.columns([7, 5])
         l_r2_c1.markdown('<div class="meta-label-vertical">DM & DSS Bank:</div>', unsafe_allow_html=True)
         l_r2_c2.markdown(f'<div class="meta-value-vertical">{op_bank_val:,.2f} ৳</div>', unsafe_allow_html=True)
-        
         l_r3_c1, l_r3_c2 = st.columns([7, 5])
         l_r3_c1.markdown('<div class="meta-label-vertical">Market Advance:</div>', unsafe_allow_html=True)
         l_r3_c2.markdown(f'<div class="meta-value-vertical">{op_adv_val:,.2f} ৳</div>', unsafe_allow_html=True)
-        
         l_r4_c1, l_r4_c2 = st.columns([7, 5])
         l_r4_c1.markdown('<div class="meta-label-vertical">Others Due:</div>', unsafe_allow_html=True)
         l_r4_c2.markdown(f'<div class="meta-value-vertical">{op_due_val:,.2f} ৳</div>', unsafe_allow_html=True)
-        
         st.markdown('<hr class="meta-hr">', unsafe_allow_html=True)
-        
         l_r5_c1, l_r5_c2 = st.columns([7, 5])
         l_r5_c1.markdown('<div class="summary-label-vertical" style="color:#00ffaa; font-weight:bold;">Total Opening Cash:</div>', unsafe_allow_html=True)
         l_r5_c2.markdown(f'<div class="summary-value-vertical" style="color:#00ffaa; font-weight:bold;">{total_opening_calc:,.2f} ৳</div>', unsafe_allow_html=True)
-        
         # Today's Receive হোল্ডার (লাইভ রিয়াকশনের জন্য)
         placeholder_left_summary = st.empty()
-
     # ----------------------------------------------------------------------
     # 🔴 ডান কলাম: PAY OUT (খরচ/প্রদান)
     # ----------------------------------------------------------------------
@@ -719,7 +713,6 @@ elif current_action == "Cash Management":
     # ----------------------------------------------------------------------
     st.markdown("<br>", unsafe_allow_html=True)
     grid_col1, grid_col2 = st.columns(2)
-    
     # বাম পাশের ১৫টি রো
     with grid_col1:
         st.markdown('<p style="color:#00ffaa; font-weight:bold; margin-bottom:0;">➕ আজকের জমা তালিকা (CASH RECEIVE):</p>', unsafe_allow_html=True)
@@ -739,7 +732,6 @@ elif current_action == "Cash Management":
                 rem = st.text_input(f"r_in_{i}", label_visibility="collapsed", placeholder="-", key=f"c_r_in_{i}")
             if p and a > 0:
                 inputs_in.append((p, a, rem))
-
     # ডান পাশের ১৫টি রো
     with grid_col2:
         st.markdown('<p style="color:#ff5555; font-weight:bold; margin-bottom:0;">➖ আজকের খরচ তালিকা (PAY OUT):</p>', unsafe_allow_html=True)
@@ -747,7 +739,6 @@ elif current_action == "Cash Management":
         h_r1.markdown('<div class="table-column-title">সেকেন্ড পার্টি নাম</div>', unsafe_allow_html=True)
         h_r2.markdown('<div class="table-column-title">Amount ৳</div>', unsafe_allow_html=True)
         h_r3.markdown('<div class="table-column-title">Remarks (বিবরণ)</div>', unsafe_allow_html=True)
-        
         inputs_out = []
         for i in range(15): # ৫ থেকে বাড়িয়ে ১৫ রো করা হলো
             r_r1, r_r2, r_r3 = st.columns([5, 3, 4])
@@ -759,26 +750,21 @@ elif current_action == "Cash Management":
                 rem = st.text_input(f"r_out_{i}", label_visibility="collapsed", placeholder="-", key=f"c_r_out_{i}")
             if p and a > 0:
                 inputs_out.append((p, a, rem))
-
     # ----------------------------------------------------------------------
     # 🧮 রিয়েল-টাইম লাইভ ম্যাথমেটিক্যাল ক্যালকুলেশন এবং এলাইনমেন্ট লক
     # ----------------------------------------------------------------------
     total_today_receive = sum(x[1] for x in inputs_in)
     grand_total_receive = total_opening_calc + total_today_receive
-
-    total_today_payout = sum(x[1] for x in inputs_out)
-    
+    total_today_payout = sum(x[1] for x in inputs_out)    
     # আপনার দেওয়া গাণিতিক শর্তাবলী ও ফর্মুলা রুলস:
     # Grand Total (Left) = Grand Total (Right) হতে হবে
     # Vault Cash = Grand Total Receive - Today's Pay Out - (ম্যানুয়াল ব্যাংক + ম্যানুয়াল এডভান্স + ম্যানুয়াল ডিউ)
     cl_vault = grand_total_receive - total_today_payout - (m_bank + m_advance + m_due)
     total_closing_calc = cl_vault + m_bank + m_advance + m_due
     grand_total_payout = total_today_payout + total_closing_calc # আপনার কাঙ্ক্ষিত সূত্র: Grand Total = Today's Pay Out + Total Closing Cash
-
-    # ডাইনামিক ফিল্ডগুলোতে লাইভ ডেটা পুশ (একদম সমান লাইনে ডিসপ্লে করার ব্যবস্থা)
+     # ডাইনামিক ফিল্ডগুলোতে লাইভ ডেটা পুশ (একদম সমান লাইনে ডিসপ্লে করার ব্যবস্থা)
     placeholder_vault_cash_text.markdown(f'<div class="meta-value-vertical">{cl_vault:,.2f} ৳</div>', unsafe_allow_html=True)
     placeholder_total_closing_text.markdown(f'<div class="summary-value-vertical" style="color:#ff5555; font-weight:bold;">{total_closing_calc:,.2f} ৳</div>', unsafe_allow_html=True)
-
     # জমার দিকের নিচের অংশ (Today's Receive এবং Grand Total)
     placeholder_left_summary.markdown(f"""
         <div style="margin-top:10px;">
@@ -789,7 +775,6 @@ elif current_action == "Cash Management":
             <div class="summary-grand-value" style="display:inline-block; width:43%;">{grand_total_receive:,.2f} ৳</div>
         </div>
     """, unsafe_allow_html=True)
-
     # খরচের দিকের নিচের অংশ (Today's Pay Out এবং Grand Total) - এটি বাম পাশের সাথে নিখুঁতভাবে একই লাইনে এলাইন হবে
     placeholder_right_summary.markdown(f"""
         <div style="margin-top:10px;">
@@ -800,7 +785,6 @@ elif current_action == "Cash Management":
             <div class="summary-grand-value" style="display:inline-block; width:43%; color:#ff5555;">{grand_total_payout:,.2f} ৳</div>
         </div>
     """, unsafe_allow_html=True)
-
     # 🔒 ৬. গলোবাল ডাটাবেজ সেভ বাটন
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🔒 এই তারিখের সম্পূর্ণ খাতা একসাথে ডাটাবেজে সংরক্ষণ করুন", type="primary", use_container_width=True):
@@ -808,7 +792,6 @@ elif current_action == "Cash Management":
         try:
             # ডুপ্লিকেট এড়াতে আজকের তারিখের খাতা আগে ক্লিন করা হবে
             cursor.execute("DELETE FROM cash_transactions WHERE company=? AND date=?", (current_company, date_str))
-            
             # জমার ডাটা সেভ
             for p, a, rem in inputs_in:
                 cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, ?, 'Cash In', ?, ?)", (date_str, current_company, p, a, rem))
