@@ -4,112 +4,85 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-from datetime import datetime, timedelta
-import io
+from datetime import datetime
 import os
-import base64
-from PIL import Image
 
-st.set_page_config(page_title="M/S Jabed Enterprise", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="M/S Jabed Enterprise", layout="wide", initial_sidebar_state="collapsed")
+
+# কাস্টম CSS - প্রফেশনাল লুকের জন্য
+st.markdown("""
+<style>
+    .stButton>button { width: 100%; border-radius: 3px; border: 1px solid #ccc; font-size: 13px; }
+    div[data-testid="stExpander"] { border: 1px solid #ddd; margin-bottom: 5px; }
+    h1, h2, h3 { color: #2d3436; margin-bottom: 10px; }
+</style>
+""", unsafe_allow_html=True)
+
+# ডাটাবেজ পাথ ও কানেকশন
+DB_NAME = "jabed_enterprise.db"
 
 # ==============================================================================
-# লগইন সিস্টেম (সুরক্ষার জন্য রোল-বেসড অ্যাক্সেসসহ)
+# ২. লগইন ও সেশন কন্ট্রোলার (Attachment 3 থেকে সংগৃহীত)
 # ==============================================================================
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-if 'user_role' not in st.session_state:
-    st.session_state.user_role = None
+if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 
 if not st.session_state.logged_in:
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 1.5, 1]) 
+    # আপনার পুরনো লগইন লজিক
+    col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
-        st.markdown("<h3 style='text-align: center; color: #10b981;'>🔐 M/S JABED ENTERPRISE</h3>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align: center; color: #a0a0a0;'>দয়া করে সঠিক ইউজারনেম ও পাসওয়ার্ড দিয়ে লগইন করুন।</p>", unsafe_allow_html=True)
-        
-        with st.form("login_form"):
-            username = st.text_input("ইউজারনেম (Username)")
-            password = st.text_input("পাসওয়ার্ড (Password)", type="password")
-            login_button = st.form_submit_button("লগইন করুন", use_container_width=True)
-            
-            if login_button:
-                if username == "admin" and password == "jabed2026":
+        st.markdown("### 🔐 Login")
+        with st.form("login"):
+            u = st.text_input("Username")
+            p = st.text_input("Password", type="password")
+            if st.form_submit_button("Login"):
+                if u == "admin" and p == "jabed2026":
                     st.session_state.logged_in = True
-                    st.session_state.user_role = "admin"
-                    st.session_state.current_action = None 
-                    st.success("এডমিন হিসেবে লগইন সফল হয়েছে!")
-                    import time; time.sleep(0.5); st.rerun()
-                elif username == "bKash_User" and password == "bkash2026": 
-                    st.session_state.logged_in = True
-                    st.session_state.user_role = "bKash_User"
-                    st.session_state.current_company = "bKash" 
-                    st.session_state.current_action = None 
-                    st.success("বিকাশ ইউজার লগইন সফল!")
-                    import time; time.sleep(0.5); st.rerun()
-                elif username == "GP_User" and password == "gp2026": 
-                    st.session_state.logged_in = True
-                    st.session_state.user_role = "GP_User"
-                    st.session_state.current_company = "GP" 
-                    st.session_state.current_action = None 
-                    st.success("GP ইউজার লগইন সফল!")
-                    import time; time.sleep(0.5); st.rerun()
-                else:
-                    st.error("ভুল ইউজারনেম অথবা পাসওয়ার্ড! আবার চেষ্টা করুন।")
+                    st.rerun()
+                else: st.error("Wrong Credentials!")
     st.stop()
 
-# ==============================================================================
-# ২. ডাইনামিক পাথ ও ফোল্ডার সেটআপ
-# ==============================================================================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_NAME = os.path.join(BASE_DIR, "jabed_enterprise.db")
-UPLOAD_DIR = os.path.join(BASE_DIR, "uploaded_docs")
-IMAGE_DIR = os.path.join(BASE_DIR, "Related Image")
-
-PHOTO_DIR = os.path.join(BASE_DIR, "employee_photos")
-EMP_NID_DIR = os.path.join(BASE_DIR, "nid_photos")
-GUAR_PHOTO_DIR = os.path.join(BASE_DIR, "guarantor_photos")
-GUAR_NID_DIR = os.path.join(BASE_DIR, "guarantor_nids")
+# লগ-আউট বাটন (সাইডবারের শীর্ষে)
+with st.sidebar:
+    if st.button("🚪 Logout"): st.session_state.logged_in = False; st.rerun()
+    st.divider()
 
 # ==============================================================================
-# ৩. ডাটাবেজ এবং অ্যাডভান্সড মাইগ্রেশন লজিক
+# ৩. ড্রপডাউন সাইডবার মেনু (আপনার চাহিদা অনুযায়ী)
 # ==============================================================================
-def init_db():
-    for folder in [UPLOAD_DIR, IMAGE_DIR, PHOTO_DIR, EMP_NID_DIR, GUAR_PHOTO_DIR, GUAR_NID_DIR]:
-        if not os.path.exists(folder):
-            os.makedirs(folder)
+with st.sidebar:
+    st.header("🏢 Navigation")
+    for comp in ["bKash", "GP"]:
+        with st.expander(f"📁 {comp} Management"):
+            if st.button("💵 Cash", key=f"c_{comp}"): st.session_state.page = "cash"; st.session_state.comp = comp
+            if st.button("📉 Expense", key=f"e_{comp}"): st.session_state.page = "exp"; st.session_state.comp = comp
+            if st.button("👥 Employee", key=f"m_{comp}"): st.session_state.page = "emp"; st.session_state.comp = comp
+            if st.button("👤 2nd Party", key=f"s_{comp}"): st.session_state.page = "sp"; st.session_state.comp = comp
 
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS employees (
-            emp_id TEXT PRIMARY KEY, name TEXT NOT NULL, designation TEXT, mobile TEXT, alt_contact TEXT, join_date TEXT,
-            basic_salary REAL, variable_salary REAL, total_salary REAL, company TEXT NOT NULL, father_name TEXT,
-            father_nid TEXT, mother_name TEXT, emp_nid TEXT, guarantor_name TEXT, guarantor_nid TEXT, guarantor_mobile TEXT
-        )
-    ''')
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS second_parties (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, company TEXT NOT NULL, party_name TEXT NOT NULL, 
-            contact_number TEXT, comments_01 TEXT, comments_02 TEXT, status TEXT DEFAULT 'Active', UNIQUE(company, party_name)
-        )
-    ''')
-    
-    default_parties = ["Mother_Wallet", "Hand_Cash", "Petty_Cash", "Bank", "BGP", "Dulal", "Shafayat", "Madina", "Owner", "GAS", "Auto_Rice", "Others", "bKash", "Commission", "Al_Arafa", "Rekit", "DMCBL", "Kabita_Mami", "Ashim_Da", "Al_Amin"]
-    for party in default_parties:
-        cursor.execute("INSERT OR IGNORE INTO second_parties (company, party_name, contact_number, comments_01, comments_02, status) VALUES ('bKash', ?, '', '', '', 'Active')", (party,))
-        cursor.execute("INSERT OR IGNORE INTO second_parties (company, party_name, contact_number, comments_01, comments_02, status) VALUES ('GP', ?, '', '', '', 'Active')", (party,))
-        
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS cash_transactions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, company TEXT NOT NULL, second_party TEXT NOT NULL, type TEXT NOT NULL, amount REAL NOT NULL, remarks TEXT
-        )
-    ''')
-    
-    conn.commit(); conn.close()
+# ==============================================================================
+# ৪. মডিউল ভিত্তিক লজিক রেন্ডারিং
+# ==============================================================================
+comp = st.session_state.get('comp', 'bKash')
+page = st.session_state.get('page', 'cash')
 
-init_db()
+if page == "cash":
+    st.header(f"💵 Cash Management - {comp}")
+    t1, t2 = st.tabs(["📝 Entry", "📊 Report"])
+    with t1:
+        c1, c2 = st.columns(2)
+        # আপনার ক্যাশ রিসিভ ও পে-আউট লজিক এখানে হুবহু বসবে
+        with c1: st.write("### Cash Receive"); # কুয়েরি কোড...
+        with c2: st.write("### Pay Out");      # কুয়েরি কোড...
+    with t2: st.write("### Ledger Report")
+
+elif page == "emp":
+    st.header(f"👥 Employee Management - {comp}")
+    t1, t2, t3 = st.tabs(["➕ Add New", "📋 View All", "📤 Excel"])
+    with t1:
+        # আপনার বিশাল Add Employee ফর্মের ফিল্ডগুলো এখানে বসবে
+        st.text_input("Name"); st.text_input("NID"); st.number_input("Salary")
+    with t2: st.write("List...")
+    with t3: st.write("Upload...")
+
 
 # ==============================================================================
 # ৪. গ্লোবাল সেশন স্টেট এবং হেল্পার ফাংশন
