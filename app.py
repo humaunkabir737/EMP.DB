@@ -667,7 +667,6 @@ elif current_action == "Cash Management":
         l_r1_c1, l_r1_c2 = st.columns([7, 5])
         l_r1_c1.markdown('<div class="meta-label-vertical">Opening Vault Cash:</div>', unsafe_allow_html=True)
         l_r1_c2.markdown(f'<div class="meta-value-vertical">{op_vault_val:,.2f} ৳</div>', unsafe_allow_html=True)
-        
         l_r2_c1, l_r2_c2 = st.columns([7, 5])
         l_r2_c1.markdown('<div class="meta-label-vertical">DM & DSS Bank:</div>', unsafe_allow_html=True)
         l_r2_c2.markdown(f'<div class="meta-value-vertical">{op_bank_val:,.2f} ৳</div>', unsafe_allow_html=True)
@@ -698,30 +697,23 @@ elif current_action == "Cash Management":
         r_r1_c1, r_r1_c2 = st.columns([7, 5])
         r_r1_c1.markdown('<div class="meta-label-vertical">Vault Cash:</div>', unsafe_allow_html=True)
         placeholder_vault_cash_text = r_r1_c2.empty() # নিচে লাইভ ক্যালকুলেশন পুশ হবে
-        
         # ৩টি ফিল্ড যা আপনি ম্যানুয়ালি এন্ট্রি করতে চেয়েছিলেন (Spinners ছাড়া ক্লিন বক্স)
         r_r2_c1, r_r2_c2 = st.columns([7, 5])
         r_r2_c1.markdown('<div class="meta-label-vertical">DM & DSS Bank:</div>', unsafe_allow_html=True)
         m_bank = r_r2_c2.number_input("DM Bank Input", min_value=0.0, step=1.0, value=0.0, label_visibility="collapsed", key="m_inp_bank")
-        
         r_r3_c1, r_r3_c2 = st.columns([7, 5])
         r_r3_c1.markdown('<div class="meta-label-vertical">Market Advance:</div>', unsafe_allow_html=True)
         m_advance = r_r3_c2.number_input("Market Adv Input", min_value=0.0, step=1.0, value=0.0, label_visibility="collapsed", key="m_inp_advance")
-        
         r_r4_c1, r_r4_c2 = st.columns([7, 5])
         r_r4_c1.markdown('<div class="meta-label-vertical">Others Due:</div>', unsafe_allow_html=True)
         m_due = r_r4_c2.number_input("Others Due Input", min_value=0.0, step=1.0, value=0.0, label_visibility="collapsed", key="m_inp_due")
-        
         st.markdown('<hr class="meta-hr">', unsafe_allow_html=True)
-        
         # Total Closing Cash হোল্ডার
         r_r5_c1, r_r5_c2 = st.columns([7, 5])
         r_r5_c1.markdown('<div class="summary-label-vertical" style="color:#ff5555; font-weight:bold;">Total Closing Cash:</div>', unsafe_allow_html=True)
         placeholder_total_closing_text = r_r5_c2.empty()
-        
         # Today's Pay Out ও Grand Total হোল্ডার
         placeholder_right_summary = st.empty()
-
     # ----------------------------------------------------------------------
     # 📊 ১৫টি ডাটা এন্ট্রি রো মেকিং সেকশন (উভয় পাশে ১৫ টি করে)
     # ----------------------------------------------------------------------
