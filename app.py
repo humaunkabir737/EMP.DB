@@ -10,88 +10,69 @@ import os
 st.set_page_config(page_title="M/S Jabed Enterprise", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
-# সেকশন ২: ডাটাবেজ এবং লগইন লজিক (আপনার পুরনো লজিক)
+# সেকশন ২: ডাটাবেজ এবং লগইন সিস্টেম (Attachment 3 এর ভিত্তি)
 # ==============================================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(BASE_DIR, "jabed_enterprise.db")
 
-# লগইন এবং সেশন স্টেট এখানে থাকবে (আপনার পুরনো Attachment 3 এর লজিক)
+# আপনার লগইন লজিক এখানে যুক্ত করুন (Attachment 3 থেকে কপি করে)
+if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'page' not in st.session_state: st.session_state.page = "Dashboard"
 
 # ==============================================================================
-# সেকশন ৩: সাইডবার মেনু (ড্রপডাউন স্ট্রাকচার)
+# সেকশন ৩: সাইডবার ড্রপডাউন মেনু
 # ==============================================================================
 with st.sidebar:
-    st.header("🏢 Main Menu")
+    st.header("🏢 Navigation")
     
-    # সেকশন ৩.১: bKash সেকশন
-    with st.expander("📁 bKash Management"):
-        if st.button("💵 Cash Management"): st.session_state.page = "bk_cash"
-        if st.button("📉 Expense Management"): st.session_state.page = "bk_exp"
-        if st.button("👥 Employee Management"): st.session_state.page = "bk_emp"
-        if st.button("👤 Second Party Mgt"): st.session_state.page = "bk_sp"
-    
-    # সেকশন ৩.২: GP সেকশন
-    with st.expander("📁 GP Management"):
-        if st.button("💵 GP Cash"): st.session_state.page = "gp_cash"
-        if st.button("📉 GP Expense"): st.session_state.page = "gp_exp"
-        if st.button("👥 GP Employees"): st.session_state.page = "gp_emp"
-        if st.button("👤 GP Second Party"): st.session_state.page = "gp_sp"
+    # bKash এবং GP ফোল্ডার
+    for comp in ["bKash", "GP"]:
+        with st.expander(f"📁 {comp} Management"):
+            if st.button(f"💵 Cash", key=f"c_{comp}"): 
+                st.session_state.page = "cash"; st.session_state.current_company = comp
+            if st.button(f"📉 Expense", key=f"e_{comp}"): 
+                st.session_state.page = "exp"; st.session_state.current_company = comp
+            if st.button(f"👥 Employees", key=f"m_{comp}"): 
+                st.session_state.page = "emp"; st.session_state.current_company = comp
+            if st.button(f"👤 Second Party", key=f"s_{comp}"): 
+                st.session_state.page = "sp"; st.session_state.current_company = comp
 
 # ==============================================================================
-# সেকশন ৪: ক্যাশ ম্যানেজমেন্ট (পাশাপাশি লেআউট)
+# সেকশন ৪: রাউটার লজিক (মূল ফাংশন)
 # ==============================================================================
-def render_cash_module(company):
-    st.header(f"💵 Cash Management - {company}")
+comp = st.session_state.get('current_company', 'bKash')
+
+if st.session_state.page == "cash":
+    st.header(f"💵 Cash Management - {comp}")
     tab1, tab2 = st.tabs(["📝 Entry", "📊 Report"])
-    
     with tab1:
         c1, c2 = st.columns(2)
-        with c1: 
-            st.subheader("Cash Receive")
-            # Attachment 3 এর রিসিভ লজিক এখানে বসবে
-        with c2: 
-            st.subheader("Pay Out")
-            # Attachment 3 এর পে-আউট লজিক এখানে বসবে
+        with c1: st.write("### Cash Receive") # এখানে আপনার রিসিভ লজিক বসবে
+        with c2: st.write("### Pay Out")      # এখানে আপনার পে-আউট লজিক বসবে
     with tab2:
-        st.subheader("Ledger Report")
-        # রিপোর্ট লজিক
+        st.write("📊 Cash Report content here.") # খালি না রেখে একটি টেক্সট দেওয়া হলো
 
-# ==============================================================================
-# সেকশন ৫: এক্সপেন্স ম্যানেজমেন্ট
-# ==============================================================================
-def render_expense_module(company):
-    st.header(f"📉 Expense Management - {company}")
+elif st.session_state.page == "exp":
+    st.header(f"📉 Expense Management - {comp}")
     tab1, tab2 = st.tabs(["📝 Entry", "📊 Report"])
     with tab1:
-        # এক্সেল আপলোড ও ম্যানুয়াল এন্ট্রি লজিক
+        st.write("Expense Entry Form.") # খালি না রেখে টেক্সট দেওয়া হলো
     with tab2:
-        # খরচের রিপোর্ট লজিক
+        st.write("Expense Report content here.")
 
-# ==============================================================================
-# সেকশন ৬: এমপ্লয়ি ম্যানেজমেন্ট
-# ==============================================================================
-def render_employee_module(company):
-    st.header(f"👥 Employee Management - {company}")
-    tab1, tab2, tab3 = st.tabs(["➕ Add New", "📋 View All", "📤 Upload By Excel"])
-    with tab1: # ফর্ম কোড
-    with tab2: # টেবিল কোড
-    with tab3: # এক্সেল আপলোড লজিক
+elif st.session_state.page == "emp":
+    st.header(f"👥 Employee Management - {comp}")
+    tab1, tab2, tab3 = st.tabs(["➕ Add New", "📋 View All", "📤 Upload"])
+    with tab1: st.write("Add form.")
+    with tab2: st.write("View list.")
+    with tab3: st.write("Upload logic.")
 
-# ==============================================================================
-# সেকশন ৭: সেকেন্ড পার্টি ম্যানেজমেন্ট
-# ==============================================================================
-def render_sp_module(company):
-    st.header(f"👤 Second Party Management - {company}")
-    tab1, tab2 = st.tabs(["➕ Add Party", "📋 List & Edit"])
-    with tab1: # পার্টি অ্যাড কোড
-    with tab2: # লিস্ট কোড
+elif st.session_state.page == "sp":
+    st.header(f"👤 Second Party Management - {comp}")
+    tab1, tab2 = st.tabs(["➕ Add", "📋 List"])
+    with tab1: st.write("Add party form.")
+    with tab2: st.write("Party list.")
 
-# ==============================================================================
-# সেকশন ৮: মেইন রাউটার (কন্ডিশনাল রেন্ডারিং)
-# ==============================================================================
-if st.session_state.page == "bk_cash": render_cash_module("bKash")
-elif st.session_state.page == "bk_exp": render_expense_module("bKash")
-elif st.session_state.page == "bk_emp": render_employee_module("bKash")
-elif st.session_state.page == "bk_sp": render_sp_module("bKash")
-# একইভাবে GP এর জন্য রেন্ডার কল করুন
+else:
+    st.title("M/S Jabed Enterprise")
+    st.write("সাইডবার মেনু থেকে সিলেক্ট করুন।")
