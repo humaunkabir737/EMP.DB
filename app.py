@@ -4,7 +4,7 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import io
 import os
 import base64
@@ -89,49 +89,24 @@ def init_db():
         )
     ''')
     
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='second_parties'")
-    if cursor.fetchone():
-        cursor.execute("PRAGMA table_info(second_parties)")
-        existing_sp_columns = [col[1] for col in cursor.fetchall()]
-        if 'company' not in existing_sp_columns:
-            has_status = 'status' in existing_sp_columns
-            cursor.execute("ALTER TABLE second_parties RENAME TO old_second_parties")
-            cursor.execute('''
-                CREATE TABLE second_parties (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT, company TEXT NOT NULL, party_name TEXT NOT NULL, 
-                    contact_number TEXT, comments_01 TEXT, comments_02 TEXT, status TEXT DEFAULT 'Active', UNIQUE(company, party_name)
-                )
-            ''')
-            if has_status:
-                cursor.execute("INSERT INTO second_parties (id, company, party_name, contact_number, comments_01, comments_02, status) SELECT id, 'bKash', party_name, contact_number, comments_01, comments_02, IFNULL(status, 'Active') FROM old_second_parties")
-            else:
-                cursor.execute("INSERT INTO second_parties (company, party_name, contact_number, comments_01, comments_02, status) SELECT 'bKash', party_name, contact_number, comments_01, comments_02, 'Active' FROM old_second_parties")
-            cursor.execute("DROP TABLE old_second_parties")
-    else:
-        cursor.execute('''
-            CREATE TABLE second_parties (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, company TEXT NOT NULL, party_name TEXT NOT NULL, 
-                contact_number TEXT, comments_01 TEXT, comments_02 TEXT, status TEXT DEFAULT 'Active', UNIQUE(company, party_name)
-            )
-        ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS second_parties (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, company TEXT NOT NULL, party_name TEXT NOT NULL, 
+            contact_number TEXT, comments_01 TEXT, comments_02 TEXT, status TEXT DEFAULT 'Active', UNIQUE(company, party_name)
+        )
+    ''')
     
     default_parties = ["Mother_Wallet", "Hand_Cash", "Petty_Cash", "Bank", "BGP", "Dulal", "Shafayat", "Madina", "Owner", "GAS", "Auto_Rice", "Others", "bKash", "Commission", "Al_Arafa", "Rekit", "DMCBL", "Kabita_Mami", "Ashim_Da", "Al_Amin"]
     for party in default_parties:
         cursor.execute("INSERT OR IGNORE INTO second_parties (company, party_name, contact_number, comments_01, comments_02, status) VALUES ('bKash', ?, '', '', '', 'Active')", (party,))
-    
+        cursor.execute("INSERT OR IGNORE INTO second_parties (company, party_name, contact_number, comments_01, comments_02, status) VALUES ('GP', ?, '', '', '', 'Active')", (party,))
+        
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS cash_transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, company TEXT NOT NULL, second_party TEXT NOT NULL, type TEXT NOT NULL, amount REAL NOT NULL, remarks TEXT
         )
     ''')
     
-    cursor.execute("PRAGMA table_info(employees)")
-    existing_columns = [col[1] for col in cursor.fetchall()]
-    required_cols = {'company': "TEXT DEFAULT 'bKash'", 'father_name': "TEXT", 'father_nid': "TEXT", 'mother_name': "TEXT", 'emp_nid': "TEXT", 'guarantor_name': "TEXT", 'guarantor_nid': "TEXT", 'guarantor_mobile': "TEXT"}
-    for col_name, col_type in required_cols.items():
-        if col_name not in existing_columns:
-            cursor.execute(f"ALTER TABLE employees ADD COLUMN {col_name} {col_type}")
-            
     conn.commit(); conn.close()
 
 init_db()
@@ -146,7 +121,22 @@ for state_key, default_val in [('current_company', 'None'), ('current_action', N
 def open_edit_mode(): st.session_state.dialog_edit_mode = True
 def close_edit_mode(): st.session_state.dialog_edit_mode = False
 
-# সুন্দর এবং এলাইনমেন্ট-ঠিক রাখা নো-ইমেজ ফ্রেম জেনারেটর
+# রিয়েল-টাইম পূর্ববর্তী দিন পর্যন্ত মোট ক্লোজিং ব্যালেন্স তথা ওপেনিং ভল্ট ক্যাশ ক্যালকুলেটর
+def get_opening_vault_cash(company, target_date_str):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT 
+            SUM(CASE WHEN type='Cash In' THEN amount ELSE 0 END) - 
+            SUM(CASE WHEN type='Cash Out' THEN amount ELSE 0 END)
+        FROM cash_transactions 
+        WHERE company=? AND date < ?
+    """, (company, target_date_str))
+    result = cursor.fetchone()[0]
+    conn.close()
+    return float(result) if result else 0.0
+
+# নো-ইমেজ ফ্রেম জেনারেটর
 def render_no_image_frame(title):
     return f"""
     <div style="border: 2px dashed #444444; border-radius: 8px; background-color: #1e1e1e; 
@@ -221,6 +211,7 @@ def show_second_party_details(party_id):
             new_p_status = st.selectbox("Status", ["Active", "Inactive"], index=0 if p_status == "Active" else 1)
             if st.form_submit_button("💾 Save Changes", use_container_width=True):
                 if not new_p_name.strip(): st.error("Second Party Name খালি রাখা যাবে না!")
+                elif any(char >= '\u0980' and char <= '\u09ff' for char in new_p_name): st.error("Error: Second Party Name অবশ্যই ইংরেজিতে হতে হবে (No Bengali Allowed)!")
                 else:
                     try:
                         conn = sqlite3.connect(DB_NAME); cursor = conn.cursor()
@@ -234,7 +225,7 @@ def show_second_party_details(party_id):
                         st.error("এই কোম্পানির আন্ডারে এই নামের আরেকটি সেকেন্ড পার্টি ইতিমধ্যে ডাটাবেজে বিদ্যমান!")
 
 # ==============================================================================
-# 🔍 কর্মচারীর প্রোফাইল ডিটেইলস ডায়ালগ (বারবার পপআপ আসার বাগটি এখানে ফিক্সড)
+# 🔍 কর্মচারীর প্রোফাইল ডিটেইলস ডায়ালগ 
 # ==============================================================================
 @st.dialog("Employee Profile Details", width="large")
 def show_employee_details(emp_id, company):
@@ -337,7 +328,7 @@ def show_employee_details(emp_id, company):
                 new_guar_nid_img = st.file_uploader("Update Guarantor NID Card Image", type=["png", "jpg", "jpeg"])
             
             if st.form_submit_button("💾 Save All Profile Changes"):
-                if not (new_name or "").strip(): st.error("Name خالی রাখা যাবে না!")
+                if not (new_name or "").strip(): st.error("Name খালি রাখা যাবে না!")
                 else:
                     if new_emp_img: Image.open(new_emp_img).save(emp_photo_path)
                     if new_emp_nid_img: Image.open(new_emp_nid_img).save(emp_nid_path)
@@ -353,7 +344,7 @@ def show_employee_details(emp_id, company):
                     """, (new_name.strip(), new_desig, (new_mobile or "").strip(), (new_alt or "").strip(), str(new_date), new_basic, new_variable, new_total,
                           (new_f_name or "").strip(), (new_f_nid or "").strip(), (new_m_name or "").strip(), (new_emp_nid or "").strip(), (new_g_name or "").strip(), (new_g_nid or "").strip(), (new_g_mob or "").strip(), emp_id, company))
                     conn.commit(); conn.close()
-                    st.toast("কর্মীর তথ্য সফলভাবে আপডেট করা হয়েছে!", icon="✅")
+                    st.toast("कर्मীর তথ্য সফলভাবে আপডেট করা হয়েছে!", icon="✅")
                     st.session_state.active_emp_id = None 
                     st.session_state.dialog_edit_mode = False
                     import time; time.sleep(0.5); st.rerun()
@@ -412,11 +403,6 @@ if user_role in ["admin", "GP_User"]:
             if st.button("📁 Others Account", key="gp_oth_btn", use_container_width=True):
                 st.session_state.current_company = "GP"; st.session_state.current_action = "Others"; st.rerun()
 
-if user_role == "admin":
-    with st.sidebar.expander("📁 Global Others", expanded=False):
-        if st.button("📁 Global Others Account", key="main_oth_btn", use_container_width=True):
-            st.session_state.current_company = "Others"; st.session_state.current_action = "Others"; st.rerun()
-
 current_action = st.session_state.get('current_action', None)
 current_company = st.session_state.get('current_company', None)
 
@@ -426,7 +412,7 @@ current_company = st.session_state.get('current_company', None)
 render_header()
 
 if current_action is None:
-    st.markdown("<h3 style='text-align: center; color: #10b981;'>ড্যাশবোর্ড系统中 আপনাকে স্বাগতম!</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #10b981;'>ড্যাশবোর্ড সিস্টেমে আপনাকে স্বাগতম!</h3>", unsafe_allow_html=True)
     st.info("💡 কাজ শুরু করতে বাম পাশের সাইডবার মেনু থেকে কোম্পানির নির্দিষ্ট ফোল্ডার এক্সপ্যান্ড করে কাঙ্ক্ষিত অপশনটি সিলেক্ট করুন।")
 
 elif current_action == "Add New Employee":
@@ -521,6 +507,7 @@ elif current_action == "Add New Second Party":
         c2 = st.text_input("Comments 02")
         if st.form_submit_button("💾 Save Second Party"):
             if not party_name.strip(): st.error("নাম দেওয়া বাধ্যতামূলক!")
+            elif any(char >= '\u0980' and char <= '\u09ff' for char in party_name): st.error("Error: Second Party Name অবশ্যই ইংরেজিতে হতে হবে (No Bengali Allowed)!")
             else:
                 try:
                     conn = sqlite3.connect(DB_NAME); cursor = conn.cursor()
@@ -543,40 +530,248 @@ elif current_action == "View All Second Parties":
             if col3.button("⚙️ Manage", key=f"m_sp_{row['id']}"):
                 st.session_state.active_party_id = row['id']; st.rerun()
 
+# ==============================================================================
+# লজিক: 💵 Cash Management (bKash/GP-এর জন্য অ্যাডভান্সড ডাবল-এন্ট্রি ও এক্সেল আপলোড)
+# ==============================================================================
 elif current_action == "Cash Management":
-    st.markdown(f"### 💵 Cash Management ({current_company})")
+    st.markdown(f"### 💵 Advanced Cash Khata Management ({current_company})")
+    
     conn = sqlite3.connect(DB_NAME)
     parties = [r[0] for r in conn.execute("SELECT party_name FROM second_parties WHERE company=? AND status='Active'", (current_company,)).fetchall()]
     conn.close()
+
+    tab1, tab2 = st.tabs(["📝 ডাবল-এন্ট্রি লেনদেন গ্রিড ও এক্সেল আপলোড", "📖 ক্যাশ খাতার খতিয়ান ও খেরোখাতা"])
     
-    tab1, tab2 = st.tabs(["📝 নতুন লেনদেন এন্ট্রি", "📖 ক্যাশ খাতার খতিয়ান"])
     with tab1:
-        with st.form("cash_form", clear_on_submit=True):
-            col1, col2 = st.columns(2)
-            tx_date = col1.date_input("তারিখ", datetime.now())
-            tx_party = col1.selectbox("সেকেন্ড পার্টি খাতা (Second Party)", options=[""] + parties)
-            tx_type = col2.selectbox("লেনদেনের ধরণ (Type)", options=["Cash In", "Cash Out"])
-            tx_amount = col2.number_input("পরিমাণ (Amount ৳)", min_value=0.0, step=500.0)
-            tx_remarks = st.text_input("বিস্তারিত বিবরণ (Remarks)")
-            if st.form_submit_button("💾 লেনদেন সাবমিট করুন"):
-                if tx_party == "" or tx_amount <= 0: st.error("দয়া করে সঠিক পার্টি এবং অ্যামাউন্ট ইনপুট দিন!")
-                else:
+        # ----------------------------------------------------------------------
+        # অংশ ১: Upload by Excel অপশন সংযোজন
+        # ----------------------------------------------------------------------
+        st.markdown("##### 📤 Upload Cash Khata via Excel (Bulk Import)")
+        up_col1, up_col2 = st.columns([3, 1])
+        with up_col1:
+            uploaded_cash_excel = st.file_uploader("ক্যাশ খাতার এক্সেল ফাইলটি ড্রপ করুন:", type=["xlsx"], key="excel_cash_uploader")
+        with up_col2:
+            st.markdown("<div style='padding-top: 24px;'></div>", unsafe_allow_html=True)
+            cash_template_buffer = io.BytesIO()
+            cash_temp_df = pd.DataFrame(columns=["date", "second_party", "type", "amount", "remarks"])
+            cash_temp_df.loc[0] = [str(datetime.now().date()), "Mother_Wallet", "Cash In", 50000.0, "Bank Transfer In"]
+            cash_temp_df.loc[1] = [str(datetime.now().date()), "Hand_Cash", "Cash Out", 12000.0, "Daily Market Payout"]
+            with pd.ExcelWriter(cash_template_buffer, engine='openpyxl') as writer:
+                cash_temp_df.to_excel(writer, index=False, sheet_name='Cash_Template')
+            st.download_button("📥 ডাউনলোড ক্যাশ টেমপ্লেট", data=cash_template_buffer.getvalue(), file_name=f"{current_company}_cash_template.xlsx", use_container_width=True)
+
+        if uploaded_cash_excel is not None:
+            try:
+                xl_df = pd.read_excel(uploaded_cash_excel)
+                st.markdown("👀 **এক্সেল ফাইলের প্রিভিউ:**")
+                st.dataframe(xl_df.head(5), use_container_width=True, hide_index=True)
+                if st.button("💾 এক্সেল ডাটা সরাসরি পুশ করুন", key="push_excel_cash_btn"):
                     conn = sqlite3.connect(DB_NAME); cursor = conn.cursor()
-                    cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, ?, ?, ?, ?)",
-                                   (str(tx_date), current_company, tx_party, tx_type, tx_amount, tx_remarks))
-                    conn.commit(); conn.close(); st.success("লেনদেন সফলভাবে লিপিবদ্ধ হয়েছে!")
+                    success_count = 0
+                    for _, row in xl_df.iterrows():
+                        c_date = str(row.get('date', datetime.now().date())).split(" ")[0]
+                        c_party = str(row.get('second_party', '')).strip()
+                        c_type = str(row.get('type', '')).strip()
+                        c_amount = float(row['amount']) if pd.notnull(row['amount']) else 0.0
+                        c_remarks = str(row.get('remarks', '')).strip() if pd.notnull(row.get('remarks', '')) else ""
+                        
+                        if c_party and c_type in ["Cash In", "Cash Out"] and c_amount > 0:
+                            cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, ?, ?, ?, ?)",
+                                           (c_date, current_company, c_party, c_type, c_amount, c_remarks))
+                            success_count += 1
+                    conn.commit(); conn.close()
+                    if success_count > 0:
+                        st.success(f"✅ এক্সেল থেকে সফলভাবে {success_count}টি লেনদেন ডাটাবেজে অন্তর্ভুক্ত করা হয়েছে!"); import time; time.sleep(0.5); st.rerun()
+                    else:
+                        st.error("❌ ফাইলে কোনো ভ্যালিড লেনদেন খুঁজে পাওয়া যায়নি!")
+            except Exception as e:
+                st.error(f"এক্সেল প্রসেসিং এরর: {e}")
+
+        st.markdown("<hr style='border: 0.5px solid #333;'>", unsafe_allow_html=True)
+        
+        # ----------------------------------------------------------------------
+        # অংশ ২: ডাইনামিক পাশাপাশি ডাবল টেবিল (3.jpg সংযুক্ত ফরম্যাট অনুযায়ী)
+        # ----------------------------------------------------------------------
+        st.markdown("##### 📝 ম্যানুয়াল সাইড-বাই-সাইড ডাবল-এন্ট্রি সিস্টেম")
+        
+        # উপরে ডেট পরিবর্তনের মাস্টার কন্ট্রোল
+        tx_master_date = st.date_input("📆 হিসাবের তারিখ পরিবর্তন করুন (Date Master):", datetime.now().date(), key="cash_master_entry_date")
+        target_date_str = str(tx_master_date)
+        
+        # রিয়েল-টাইম পূর্ববর্তী দিনগুলোর ক্লোজিং থেকে ওপেনিং ভল্ট ক্যাশ ক্যালকুলেট
+        calculated_opening_vault = get_opening_vault_cash(current_company, target_date_str)
+        
+        # পাশাপাশি মূল দুই কলাম (জমা ও খরচ)
+        receive_side_col, payout_side_col = st.columns(2)
+        
+        # --- BAM COLUMN: CASH RECEIVE (জমা) ---
+        with receive_side_col:
+            st.markdown("<h4 style='background-color:#064e3b; padding:8px; border-radius:5px; text-align:center; color:#10b981;'>📥 CASH RECEIVE (জমা টেবিল)</h4>", unsafe_allow_html=True)
+            
+            # ইমেজ 3.jpg এর অনুরূপ ওপেনিং ব্লক লেআউট
+            st.markdown("**📂 Opening Cash Structure**")
+            box_r1, box_r2 = st.columns([2, 1])
+            box_r1.info("🔑 Opening Vault Cash (অটোমেটিক)")
+            op_vault_val = box_r2.number_input("Vault Amt", value=calculated_opening_vault, disabled=True, label_visibility="collapsed", key="op_vault_display_val")
+            
+            # ৪টি রো-এর ডেটা অ্যারে ডিক্লেয়ারেশন
+            rcv_inputs = []
+            
+            st.markdown("<hr style='margin:5px 0px; border-color:#222;'>", unsafe_allow_html=True)
+            st.markdown("**➕ নতুন নগদ জমা এন্ট্রি গ্রিড**")
+            
+            # হেডার গাইড
+            h_rc1, h_rc2, h_rc3 = st.columns([3, 2, 3])
+            h_rc1.markdown("<small><b>সেকেন্ড পার্টি নাম</b></small>", unsafe_allow_html=True)
+            h_rc2.markdown("<small><b>Amount ৳</b></small>", unsafe_allow_html=True)
+            h_rc3.markdown("<small><b>Remarks (বিবরণ)</b></small>", unsafe_allow_html=True)
+            
+            # ১০টি ডাইনামিক এন্ট্রি রো জেনারেশন
+            for idx in range(10):
+                r_c1, r_c2, r_c3 = st.columns([3, 2, 3])
+                with r_c1:
+                    p_name = st.selectbox(f"R_Party_{idx}", options=[""] + parties, key=f"rcv_party_{idx}", label_visibility="collapsed")
+                with r_c2:
+                    p_amt = st.number_input(f"R_Amt_{idx}", min_value=0.0, step=500.0, value=None, key=f"rcv_amt_{idx}", label_visibility="collapsed")
+                with r_c3:
+                    p_rem = st.text_input(f"R_Rem_{idx}", placeholder="বিবরণ...", key=f"rcv_rem_{idx}", label_visibility="collapsed")
+                rcv_inputs.append((p_name, p_amt, p_rem))
+                
+            # সর্বমোট জমা সাইডের যোগফল হিসাব (ওপেনিং ভল্ট + গ্রিডের নতুন এন্ট্রি)
+            grid_rcv_total = sum([item[1] for item in rcv_inputs if item[1] is not None])
+            grand_total_receive = op_vault_val + grid_rcv_total
+            st.markdown(f"<h5 style='text-align:right; color:#10b981;'>Total Receive Side: {grand_total_receive:,.1f} ৳</h5>", unsafe_allow_html=True)
+
+        # --- DAN COLUMN: PAY OUT (খরচ/প্রদান) ---
+        with payout_side_col:
+            st.markdown("<h4 style='background-color:#7f1d1d; padding:8px; border-radius:5px; text-align:center; color:#f87171;'>📤 PAY OUT (খরচ টেবিল)</h4>", unsafe_allow_html=True)
+            
+            # ইমেজ 3.jpg এর অনুরূপ এডিটেবল ওপেনিং লেআউট
+            st.markdown("**📂 Variable Ledger Status**")
+            
+            pay_box_lbl1, pay_box_val1 = st.columns([2, 1])
+            pay_box_lbl1.markdown("<div style='padding-top:5px;'>🏦 DM & DSS Bank</div>", unsafe_allow_html=True)
+            dm_dss_val = pay_box_val1.number_input("DM Bank", min_value=0.0, value=0.0, step=1000.0, label_visibility="collapsed", key="v_dm_dss")
+            
+            pay_box_lbl2, pay_box_val2 = st.columns([2, 1])
+            pay_box_lbl2.markdown("<div style='padding-top:5px;'>🛒 Market Advance</div>", unsafe_allow_html=True)
+            market_adv_val = pay_box_val2.number_input("Mkt Adv", min_value=0.0, value=0.0, step=1000.0, label_visibility="collapsed", key="v_mkt_adv")
+            
+            pay_box_lbl3, pay_box_val3 = st.columns([2, 1])
+            pay_box_lbl3.markdown("<div style='padding-top:5px;'>⚠️ Others Due</div>", unsafe_allow_html=True)
+            others_due_val = pay_box_val3.number_input("Oth Due", min_value=0.0, value=0.0, step=1000.0, label_visibility="collapsed", key="v_oth_due")
+            
+            # ৩টি ওপেনিং প্রদান উপাদানের যোগফল
+            sub_total_payout_opening = dm_dss_val + market_adv_val + others_due_val
+            
+            st.markdown("<hr style='margin:5px 0px; border-color:#222;'>", unsafe_allow_html=True)
+            st.markdown("**➖ নতুন নগদ পে-আউট এন্ট্রি গ্রিড**")
+            
+            # হেডার গাইড
+            h_pc1, h_pc2, h_pc3 = st.columns([3, 2, 3])
+            h_pc1.markdown("<small><b>সেকেন্ড পার্টি নাম</b></small>", unsafe_allow_html=True)
+            h_pc2.markdown("<small><b>Amount ৳</b></small>", unsafe_allow_html=True)
+            h_pc3.markdown("<small><b>Remarks (বিবরণ)</b></small>", unsafe_allow_html=True)
+            
+            pay_inputs = []
+            # ১০টি ডাইনামিক পে-আউট এন্ট্রি রো জেনারেশন
+            for idx in range(10):
+                p_c1, p_c2, p_c3 = st.columns([3, 2, 3])
+                with p_c1:
+                    po_party = st.selectbox(f"P_Party_{idx}", options=[""] + parties, key=f"pay_party_{idx}", label_visibility="collapsed")
+                with p_c2:
+                    po_amt = st.number_input(f"P_Amt_{idx}", min_value=0.0, step=500.0, value=None, key=f"pay_amt_{idx}", label_visibility="collapsed")
+                with p_c3:
+                    po_rem = st.text_input(f"P_Rem_{idx}", placeholder="বিবরণ...", key=f"pay_rem_{idx}", label_visibility="collapsed")
+                pay_inputs.append((po_party, po_amt, po_rem))
+                
+            # সর্বমোট পে-আউট সাইডের যোগফল হিসাব
+            grid_pay_total = sum([item[1] for item in pay_inputs if item[1] is not None])
+            grand_total_payout = sub_total_payout_opening + grid_pay_total
+            st.markdown(f"<h5 style='text-align:right; color:#f87171;'>Total Payout Side: {grand_total_payout:,.1f} ৳</h5>", unsafe_allow_html=True)
+
+        # ----------------------------------------------------------------------
+        # অংশ ৩: ম্যাচিং ভ্যালিডেশন ও গ্লোবাল সেভ মেকানিজম
+        # ----------------------------------------------------------------------
+        st.markdown("---")
+        
+        # ডিসপ্লে ব্যালেন্সার প্যানেল
+        bal_c1, bal_c2, bal_c3 = st.columns([3, 3, 4])
+        bal_c1.metric("মোট রিসিভ সাইড (Total Receive)", f"{grand_total_receive:,.1f} ৳")
+        bal_c2.metric("মোট পে-আউট সাইড (Total PayOut)", f"{grand_total_payout:,.1f} ৳")
+        
+        mismatch_delta = abs(grand_total_receive - grand_total_payout)
+        
+        if round(grand_total_receive, 2) == round(grand_total_payout, 2):
+            bal_c3.markdown("<div style='padding-top:10px;'></div>", unsafe_allow_html=True)
+            bal_c3.success("⚖️ হিসাবের উভয় পাস সম্পূর্ণ মিলে গেছে! ডেটা সেভ করার জন্য প্রস্তুত।")
+            
+            # মাস্টার সেভ বাটন
+            if st.button("💾 সমীকরণ চূড়ান্ত করুন এবং ক্যাশ খাতা সেভ করুন", type="primary", use_container_width=True, key="master_cash_save_btn"):
+                conn = sqlite3.connect(DB_NAME)
+                cursor = conn.cursor()
+                try:
+                    pushed_records = 0
+                    
+                    # ক) ম্যানুয়াল ওপেনিং হেডার ৩টি আইটেম
+                    if dm_dss_val > 0:
+                        cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, 'Bank', 'Cash Out', ?, '[Opening Header] DM & DSS Bank Entry')", (target_date_str, current_company, dm_dss_val))
+                    if market_adv_val > 0:
+                        cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, 'Others', 'Cash Out', ?, '[Opening Header] Market Advance Entry')", (target_date_str, current_company, market_adv_val))
+                    if others_due_val > 0:
+                        cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, 'Others', 'Cash Out', ?, '[Opening Header] Others Due Entry')", (target_date_str, current_company, others_due_val))
+                    
+                    # খ) রিসিভ গ্রিড থেকে ডাটাবেজে এন্ট্রি
+                    for r_party, r_amt, r_rem in rcv_inputs:
+                        if r_party != "" and r_amt is not None and r_amt > 0:
+                            cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, ?, 'Cash In', ?, ?)",
+                                           (target_date_str, current_company, r_party, r_amt, r_rem.strip()))
+                            pushed_records += 1
+                            
+                    # গ) পে-আউট গ্রিড থেকে ডাটাবেজে এন্ট্রি
+                    for p_party, p_amt, p_rem in pay_inputs:
+                        if p_party != "" and p_amt is not None and p_amt > 0:
+                            cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, ?, 'Cash Out', ?, ?)",
+                                           (target_date_str, current_company, p_party, p_amt, p_rem.strip()))
+                            pushed_records += 1
+                            
+                    conn.commit()
+                    st.balloons()
+                    st.success(f"🎉 চমৎকার! সমীকরণ মিলেছে এবং খাতার সর্বমোট {pushed_records + 3}টি রেকর্ড সফলভাবে ডাটাবেজে লক করা হয়েছে।")
+                    import time; time.sleep(0.8); st.rerun()
+                except Exception as ex:
+                    st.error(f"ডাটাবেজ সেভ ট্রানজেকশন এরর: {ex}")
+                finally:
+                    conn.close()
+        else:
+            bal_c3.markdown("<div style='padding-top:10px;'></div>", unsafe_allow_html=True)
+            bal_c3.error(f"❌ হিসাব মেলেনি! দুই সাইডের মাঝে **{mismatch_delta:,.1f} ৳** এর ব্যবধান রয়েছে। ডেটা সেভ লক করা হয়েছে।")
+            st.button("💾 সমীকরণ চূড়ান্ত করুন এবং ক্যাশ খাতা সেভ করুন", type="primary", use_container_width=True, disabled=True, key="master_cash_save_disabled")
+
     with tab2:
+        st.markdown("##### 📖 ক্যাশ খাতার সাধারণ জাবেদা ও রিয়েল-টাইম খতিয়ান বিবরণী")
         conn = sqlite3.connect(DB_NAME)
-        tx_df = pd.read_sql_query("SELECT date as 'তারিখ', second_party as 'সেকেন্ড পার্টি', type as 'ধরণ', amount as 'অ্যামাউন্ট (৳)', remarks as 'বিবরণ' FROM cash_transactions WHERE company=? ORDER BY id DESC", conn, params=(current_company,))
+        ledger_df = pd.read_sql_query("""
+            SELECT date as 'তারিখ', second_party as 'খাত/সেকেন্ড পার্টি', type as 'লেনদেনের ধরণ', amount as 'টাকার পরিমাণ (৳)', remarks as 'বিবরণ'
+            FROM cash_transactions WHERE company=? ORDER BY date DESC, id DESC
+        """, conn, params=(current_company,))
         conn.close()
-        if not tx_df.empty:
-            total_in = tx_df[tx_df['ধরণ'] == 'Cash In']['অ্যামাউন্ট (৳)'].sum()
-            total_out = tx_df[tx_df['ধরণ'] == 'Cash Out']['অ্যামাউন্ট (৳)'].sum()
-            st.metric("ক্লোজিং ব্যালেন্স (Closing Balance)", f"{total_in - total_out:,.1f} ৳", delta=f"In: {total_in} | Out: {total_out}")
-            st.dataframe(tx_df, use_container_width=True, hide_index=True)
+        
+        if not ledger_df.empty:
+            total_inflow = ledger_df[ledger_df['লেনদেনের ধরণ'] == 'Cash In']['টাকার পরিমাণ (৳)'].sum()
+            total_outflow = ledger_df[ledger_df['লেনদেনের ধরণ'] == 'Cash Out']['টাকার পরিমাণ (৳)'].sum()
+            
+            c_m1, c_m2, c_m3 = st.columns(3)
+            c_m1.metric("সর্বমোট নগদ ইন (Total Inflow)", f"{total_inflow:,.1f} ৳")
+            c_m2.metric("সর্বমোট নগদ আউট (Total Outflow)", f"{total_outflow:,.1f} ৳")
+            c_m3.metric("নিট ক্যাশ অন হ্যান্ড (Current Vault Cash)", f"{total_inflow - total_outflow:,.1f} ৳", delta=f"{total_inflow - total_outflow:,.1f} ৳ Reserves")
+            
+            st.dataframe(ledger_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("ক্যাশ খাতায় এখনো কোনো লেনদেনের রেকর্ড এন্ট্রি করা হয়নি।")
 
 # ==============================================================================
-# লজিক: Expense Management মডিউল (Sub Category ড্রপডাউন সহ রিফ্যাক্টর্ড)
+# লজিক: Expense Management মডিউল (STRICT ARCHITECTURE)
 # ==============================================================================
 elif current_action == "Expense Management":
     st.markdown(f"### 📉 Expense Management Module ({current_company})")
@@ -585,8 +780,11 @@ elif current_action == "Expense Management":
     exp_tab1, exp_tab2 = st.tabs(["📥 খরচ এন্ট্রি ও এক্সেল আপলোড", "📖 খরচের খতিয়ান ও রিপোর্ট"])
 
     with exp_tab1:
+        # ----------------------------------------------------------------------
+        # আর্কিটেকচার রুল ৪: কনফিগারেশন বার একই সমান্তরাল লাইনে স্থাপন (Single Parallel Line)
+        # ----------------------------------------------------------------------
         st.markdown("##### ⚙️ কনফিগারেশন এবং এক্সেল বাল্ক আপলোড")
-        top_c1, top_c2, top_c3, top_c4 = st.columns([2.5, 2, 4.5, 3])
+        top_c1, top_c2, top_c3, top_c4 = st.columns([2, 1.5, 3.5, 3])
         
         with top_c1:
             exp_date = st.date_input("📆 খরচের তারিখ (Date):", datetime.now().date(), key="expense_master_date")
@@ -597,10 +795,9 @@ elif current_action == "Expense Management":
         with top_c4:
             st.markdown("<div style='padding-top: 24px;'></div>", unsafe_allow_html=True)
             exp_buffer = io.BytesIO()
-            # এক্সেল টেমপ্লেটেও sub_category কলাম যুক্ত করা হয়েছে
-            exp_template_df = pd.DataFrame(columns=["date", "expense_type", "expense_category", "sub_category", "amount", "remarks"])
-            exp_template_df.loc[0] = [str(datetime.now().date()), "ROI_Expences", "Electricity_Bill", "Electricity_Bill", 1500.0, "Sample Office Bill"]
-            exp_template_df.loc[1] = [str(datetime.now().date()), "Expences", "Entertainment", "Entertainment", 350.0, "Guest Tea & Snacks"]
+            exp_template_df = pd.DataFrame(columns=["date", "expense_type", "expense_category", "amount", "remarks"])
+            exp_template_df.loc[0] = [str(datetime.now().date()), "ROI_Expences", "Electricity_Bill", 1500.0, "Office Bill"]
+            exp_template_df.loc[1] = [str(datetime.now().date()), "Expences", "Entertainment", 350.0, "Guest Tea & Snacks"]
             with pd.ExcelWriter(exp_buffer, engine='openpyxl') as writer:
                 exp_template_df.to_excel(writer, index=False, sheet_name='Expense_Template')
             st.download_button("📥 ডাউনলোড টেমপ্লেট", data=exp_buffer.getvalue(), file_name=f"{current_company}_expense_template.xlsx", use_container_width=True)
@@ -609,7 +806,7 @@ elif current_action == "Expense Management":
             st.markdown("---")
             try:
                 upload_df = pd.read_excel(uploaded_exp_file)
-                st.markdown("👀 **আপলোড করা ফাইলের প্রিভিউ (প্রথম ৫টি রো):**")
+                st.markdown("👀 **আপলোড করা ভাগের প্রিভিউ (প্রথম ৫টি রো):**")
                 st.dataframe(upload_df.head(5), use_container_width=True, hide_index=True)
                 if st.button("💾 ডাটাবেজে এক্সেল খরচ পুশ করুন", use_container_width=True):
                     conn = sqlite3.connect(DB_NAME); cursor = conn.cursor(); count = 0
@@ -617,12 +814,11 @@ elif current_action == "Expense Management":
                         r_date = str(row.get('date', datetime.now().date())).split(" ")[0]
                         r_type = str(row.get('expense_type', '')).strip()
                         r_cat = str(row.get('expense_category', '')).strip()
-                        r_subcat = str(row.get('sub_category', r_cat)).strip() # এক্সেল থেকে সাবক্যাট রিড
                         r_amt = float(row['amount']) if pd.notnull(row['amount']) else 0.0
                         r_rem = str(row.get('remarks', '')).strip() if pd.notnull(row.get('remarks', '')) else ""
                         
                         if r_type not in ['nan', 'None', ''] and r_cat not in ['nan', 'None', ''] and r_amt > 0:
-                            formatted_remarks = f"[{r_type} -> {r_cat} -> {r_subcat}] {r_rem}".strip()
+                            formatted_remarks = f"[{r_type} -> {r_cat}] {r_rem}".strip()
                             cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, 'Petty_Cash', 'Cash Out', ?, ?)", 
                                            (r_date, current_company, r_amt, formatted_remarks))
                             count += 1
@@ -632,8 +828,9 @@ elif current_action == "Expense Management":
             except Exception as e: st.error(f"এক্সেল প্রসেস করতে সমস্যা হয়েছে: {e}")
 
         st.markdown("---")
-        st.markdown("##### 📝 ম্যানুয়াল মাল্টি-রো এন্ট্রি (নতুন Sub Category কলাম সহ)")
+        st.markdown("##### 📝 ম্যানুয়াল মাল্টি-রো এন্ট্রি")
         
+        # ডাইনামিক ক্যাটাগরি ম্যাপিং
         categories_map = {
             "": [""],
             "ROI_Expences": ["", "Electricity_Bill", "Entertainment", "House_Rent", "Internet", "Bike_Maintain", "Repair", "Route_Cost", "Stationary", "Water_Bill", "Printing", "Financial_Expence", "Mobil_Change", "Salary", "bKash_Purpose", "Campaign", "Others"],
@@ -641,39 +838,39 @@ elif current_action == "Expense Management":
             "Merchant": ["", "Entertainment", "Repair", "T.A", "Printing", "Campaign", "Cash_Pay", "Stationary", "Others"]
         }
         
-        # ৪টি কলামের জায়গায় এখন সুষম ৫টি কলাম লেআউট
-        h1, h2, h3, h4, h5 = st.columns([2, 2.5, 2.5, 1.5, 3.5])
+        # ----------------------------------------------------------------------
+        # আর্কিটেকচার রুল ৪: FULL WIDTH-এ ৪টি নিখুঁত কলাম (Type, Category, Amount, Remarks)
+        # ----------------------------------------------------------------------
+        h1, h2, h3, h4 = st.columns([3, 3, 2, 4])
         h1.markdown("**Expense Type**")
         h2.markdown("**খাত (Expense Category)**")
-        h3.markdown("**Sub Category**")
-        h4.markdown("**পরিমাণ (Amount ৳)**")
-        h5.markdown("**বিবরণ (Remarks)**")
+        h3.markdown("**পরিমাণ (Amount ৳)**")
+        h4.markdown("**বিবরণ (Remarks)**")
         
         expense_rows_data = []
         for i in range(int(num_rows)):
-            c1, c2, c3, c4, c5 = st.columns([2, 2.5, 2.5, 1.5, 3.5])
+            c1, c2, c3, c4 = st.columns([3, 3, 2, 4])
             with c1: 
-                exp_type = st.selectbox(f"Type_{i}", ["", "ROI_Expences", "Expences", "Merchant"], key=f"exp_type_{i}", label_visibility="collapsed")
+                # আর্কিটেকচার রুল ৪: সম্পূর্ণ ব্ল্যাঙ্ক স্টেট থেকে ড্রপডাউন শুরু করা
+                exp_type = st.selectbox(f"Type_{i}", ["", "ROI_Expences", "Expences", "Merchant"], index=0, key=f"exp_type_{i}", label_visibility="collapsed")
             with c2: 
-                exp_cat = st.selectbox(f"Cat_{i}", categories_map.get(exp_type, [""]), key=f"exp_cat_{i}", label_visibility="collapsed")
+                # ডাইনামিক ফিল্টারিং ম্যাপিং
+                exp_cat = st.selectbox(f"Cat_{i}", categories_map.get(exp_type, [""]), index=0, key=f"exp_cat_{i}", label_visibility="collapsed")
             with c3: 
-                # আপনার শর্ত অনুযায়ী Category-তে যা সিলেক্ট হবে সাব-ক্যাটাগরিতে তাই অপশন দেখাবে
-                sub_options = [""] if exp_cat == "" else [exp_cat]
-                exp_subcat = st.selectbox(f"SubCat_{i}", sub_options, key=f"exp_subcat_{i}", label_visibility="collapsed")
-            with c4: 
+                # আর্কিটেকচার রুল ৪: ভ্যালু ডিফল্ট None সেট করা থাকবে
                 amt = st.number_input(f"Amt_{i}", min_value=0.0, step=50.0, value=None, key=f"exp_amt_{i}", label_visibility="collapsed")
-            with c5: 
-                rem = st.text_input(f"Rem_{i}", value="", key=f"exp_rem_{i}", label_visibility="collapsed", placeholder="বিস্তারিত...")
+            with c4: 
+                rem = st.text_input(f"Rem_{i}", value="", key=f"exp_rem_{i}", label_visibility="collapsed", placeholder="বিস্তারিত বিবরণ লিখুন...")
                 
-            expense_rows_data.append((exp_type, exp_cat, exp_subcat, amt, rem))
+            expense_rows_data.append((exp_type, exp_cat, amt, rem))
             
         st.markdown("---")
         if st.button("💾 সকল ম্যানুয়াল খরচ একসাথে সাবমিট করুন", type="primary", use_container_width=True):
             valid_entries = 0; conn = sqlite3.connect(DB_NAME); cursor = conn.cursor()
-            for etype, ecat, esubcat, eamt, erem in expense_rows_data:
+            for etype, ecat, eamt, erem in expense_rows_data:
                 if etype != "" and ecat != "" and eamt is not None and eamt > 0:
-                    # রিমার্কস ফিল্ডে সাব-ক্যাটাগরি ট্র্যাকিং যুক্ত করা হলো
-                    formatted_remarks = f"[{etype} -> {ecat} -> {esubcat}] {erem}".strip()
+                    formatted_remarks = f"[{etype} -> {ecat}] {erem}".strip()
+                    # আর্কিটেকচার রুল ৪: খরচসমূহ স্বয়ংক্রিয়ভাবে second_party='Petty_Cash' এবং type='Cash Out' হিসেবে পুশ হবে
                     cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, 'Petty_Cash', 'Cash Out', ?, ?)", 
                                    (str(exp_date), current_company, eamt, formatted_remarks))
                     valid_entries += 1
@@ -682,7 +879,7 @@ elif current_action == "Expense Management":
             else: st.error("❌ কমপক্ষে একটি সারিতে সঠিক ইনপুট দিন।")
 
     with exp_tab2:
-        st.markdown("##### 📊 আপনার কোম্পানির খরচ সমূহের তালিকা (Petty Cash Ledger)")
+        st.markdown("##### 📊 আপনার কোম্পানির খরচ সমүүহের তালিকা (Petty Cash Ledger)")
         conn = sqlite3.connect(DB_NAME)
         exp_df = pd.read_sql_query("""
             SELECT date as 'তারিখ', amount as 'খরচের পরিমাণ (৳)', remarks as 'বিস্তারিত বিবরণ' 
@@ -703,7 +900,6 @@ elif current_action == "Others":
 # ==============================================================================
 if st.session_state.active_emp_id:
     show_employee_details(st.session_state.active_emp_id, st.session_state.current_company)
-    # পপআপ থেকে ব্যাক করার সময় বা ক্লোজ হওয়ার সময় ডায়ালগ ফাংশন শেষ হলে সেফটি রিবুট ট্রিকার
     st.session_state.active_emp_id = None
 
 if st.session_state.active_party_id:
