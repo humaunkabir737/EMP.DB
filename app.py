@@ -637,7 +637,7 @@ elif current_action == "Cash Management":
         # টপ বার: তারিখ সিলেকশন
         col_top_left, col_top_right = st.columns([7, 3])
         with col_top_left:
-            st.markdown("<p style='font-weight:bold; margin-top:8px;'>📅 ড্যাশবোর্ড তারিখ (Date)</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-weight:bold; margin-top:8px;'>📅 Date: </p>", unsafe_allow_html=True)
         with col_top_right:
             tx_date = st.date_input("Date", datetime.now().date(), label_visibility="collapsed", key="master_sheet_date")
         
@@ -652,7 +652,7 @@ elif current_action == "Cash Management":
         with st.expander("📥 এক্সেল ফাইল থেকে অটো-ডাটা ইমপোর্ট করুন (Excel Upload)"):
             up_col1, up_col2 = st.columns([6, 4])
             with up_col1:
-                excel_file = st.file_uploader("এক্সেল ফাইল সিলেক্ট করুন (.xlsx)", type=["xlsx"], key="cash_excel_uploader")
+                excel_file = st.file_uploader("Selecy Excel File (.xlsx)", type=["xlsx"], key="cash_excel_uploader")
             with up_col2:
                 # আপনার ১ নং প্রশ্নের সমাধান: তারিখ ফিল্টারিং চয়েস পারমিশন
                 accept_all_dates = st.radio("📅 তারিখ ফিল্টারিং পারমিশন (Your Choice):", 
