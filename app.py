@@ -565,9 +565,6 @@ elif current_action == "View All Second Parties":
             if col3.button("⚙️ Manage", key=f"m_sp_{row['id']}"):
                 st.session_state.active_party_id = row['id']; st.rerun()
 
-# ==============================================================================
-# 💵 সম্পূর্ণ রিফ্যাক্টর্ড অ্যাডভান্সড ক্যাশ ম্যানেজমেন্ট মডিউল (সংযুক্ত স্ক্রিনশট ৩.জেপিজি অনুযায়ী)
-# ==============================================================================
 elif current_action == "Cash Management":
     st.markdown(f"### 💵 Cash Management ({current_company})")
     
@@ -627,8 +624,8 @@ elif current_action == "Cash Management":
     """, unsafe_allow_html=True)
 
     # ডাইনামিক রো সংখ্যা ট্র্যাকিং সেশন স্টেট (ডিফল্ট ১৫ দিয়ে শুরু হবে, এক্সেলে বেশি থাকলে অটো বাড়বে)
-    if "num_rows_in" not in st.session_state: st.session_state.num_rows_in = 5
-    if "num_rows_out" not in st.session_state: st.session_state.num_rows_out = 5
+    if "num_rows_in" not in st.session_state: st.session_state.num_rows_in = 15
+    if "num_rows_out" not in st.session_state: st.session_state.num_rows_out = 15
 
     # ক্যাশ ম্যানেজমেন্ট ট্যাব বিভাজন
     tab1, tab2 = st.tabs(["📝 দৈনিক খাতা এন্ট্রি (Daily Sheet)", "📖 ক্যাশ রিপোর্ট ও খতিয়ান (Advanced Reports)"])
@@ -640,7 +637,7 @@ elif current_action == "Cash Management":
         # টপ বার: তারিখ সিলেকশন
         col_top_left, col_top_right = st.columns([7, 3])
         with col_top_left:
-            st.markdown("<p style='font-weight:bold; margin-top:8px;'>📅 Dashboard Date </p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-weight:bold; margin-top:8px;'>📅 ড্যাশবোর্ড তারিখ (Date)</p>", unsafe_allow_html=True)
         with col_top_right:
             tx_date = st.date_input("Date", datetime.now().date(), label_visibility="collapsed", key="master_sheet_date")
         
@@ -652,10 +649,10 @@ elif current_action == "Cash Management":
         conn.close()
 
         # 📥 এক্সেল ফাইল আপলোড সাব-সেকশন (নতুন সংযোজন)
-        with st.expander("📥 Excel Upload"):
+        with st.expander("📥 এক্সেল ফাইল থেকে অটো-ডাটা ইমপোর্ট করুন (Excel Upload)"):
             up_col1, up_col2 = st.columns([6, 4])
             with up_col1:
-                excel_file = st.file_uploader("Select File (.xlsx)", type=["xlsx"], key="cash_excel_uploader")
+                excel_file = st.file_uploader("এক্সেল ফাইল সিলেক্ট করুন (.xlsx)", type=["xlsx"], key="cash_excel_uploader")
             with up_col2:
                 # আপনার ১ নং প্রশ্নের সমাধান: তারিখ ফিল্টারিং চয়েস পারমিশন
                 accept_all_dates = st.radio("📅 তারিখ ফিল্টারিং পারমিশন (Your Choice):", 
@@ -664,15 +661,15 @@ elif current_action == "Cash Management":
             
             # ছক সম্পূর্ণ ক্লিয়ার করার জন্য অতিরিক্ত রিসেট বাটন
             if st.button("🧹 ছক সম্পূর্ণ খালি করুন (Reset Form)", key="reset_cash_form_btn"):
-                st.session_state.num_rows_in = 5
-                st.session_state.num_rows_out = 5
+                st.session_state.num_rows_in = 15
+                st.session_state.num_rows_out = 15
                 for i in range(200): # সম্ভাব্য সব ঘর রিসেট
                     st.session_state[f"c_p_in_{i}"] = ""; st.session_state[f"c_a_in_{i}"] = 0.0; st.session_state[f"c_r_in_{i}"] = ""
                     st.session_state[f"c_p_out_{i}"] = ""; st.session_state[f"c_a_out_{i}"] = 0.0; st.session_state[f"c_r_out_{i}"] = ""
                 st.rerun()
 
             if excel_file is not None:
-                if st.button("📊 Enter Excel Data To Form", type="secondary", use_container_width=True):
+                if st.button("📊 এক্সেল ডাটা ইনপুট ছকে লোড করুন", type="secondary", use_container_width=True):
                     try:
                         df = pd.read_excel(excel_file)
                         if len(df.columns) < 5:
@@ -686,7 +683,7 @@ elif current_action == "Cash Management":
                             except: df['Date'] = df['Date'].astype(str).str.strip()
                             
                             # আপনার চয়েস অনুযায়ী তারিখ ফিল্টার করা
-                            if "Only Dash Board Date" in accept_all_dates:
+                            if "শুধু ড্যাশবোর্ডের তারিখের ডাটা" in accept_all_dates:
                                 df = df[df['Date'] == date_str]
                             
                             # টাইপ অনুযায়ী RECEIVE এবং PAY OUT আলাদা করা
@@ -694,8 +691,8 @@ elif current_action == "Cash Management":
                             df_out = df[df['Type'].astype(str).str.upper().str.strip() == 'PAY OUT']
                             
                             # আপনার ২ নং প্রশ্নের সমাধান (অপশন খ): ডাটা অনুযায়ী ডাইনামিক রো নির্ধারণ
-                            st.session_state.num_rows_in = max(5, len(df_in))
-                            st.session_state.num_rows_out = max(5, len(df_out))
+                            st.session_state.num_rows_in = max(15, len(df_in))
+                            st.session_state.num_rows_out = max(15, len(df_out))
                             
                             # সেশন স্টেটে জমার ডাটা পুশ করা
                             for idx, row in enumerate(df_in.to_dict(orient='records')):
@@ -711,7 +708,7 @@ elif current_action == "Cash Management":
                                 st.session_state[f"c_a_out_{idx}"] = float(row['Amount']) if pd.notnull(row['Amount']) else 0.0
                                 st.session_state[f"c_r_out_{idx}"] = str(row['Detail']) if pd.notnull(row['Detail']) and str(row['Detail']) != 'nan' else ""
                                 
-                            st.success(f"🎉 Succesfuly Loaded Data From Excel! (জমা: {len(df_in)}টি, খরচ: {len(df_out)}টি)। আপনি চাইলে এখনই এগুলো এডিট করতে পারেন।")
+                            st.success(f"🎉 এক্সেল থেকে ডাটা সফলভাবে ইনপুট ছকে লোড হয়েছে! (জমা: {len(df_in)}টি, খরচ: {len(df_out)}টি)। আপনি চাইলে এখনই এগুলো এডিট করতে পারেন।")
                             import time; time.sleep(0.6); st.rerun()
                     except Exception as e:
                         st.error(f"এক্সেল ফাইল পড়তে সমস্যা হয়েছে: {e}")
@@ -736,10 +733,10 @@ elif current_action == "Cash Management":
         # মূল সামারি লে-আউট
         main_col1, main_col2 = st.columns(2)
 
-        # 🟢 বাম কলাম: CASH RECEIVE
+        # 🟢 বাম কলাম: CASH RECEIVE (জমা)
         with main_col1:
-            st.markdown('<div class="hdr-green">🛸 CASH RECEIVE </div>', unsafe_allow_html=True)
-            st.markdown('<div class="folder-lbl">📁 Opening Cash :</div>', unsafe_allow_html=True)
+            st.markdown('<div class="hdr-green">🛸 CASH RECEIVE (জমা)</div>', unsafe_allow_html=True)
+            st.markdown('<div class="folder-lbl">📁 Opening Cash (অটোমেটিক পূর্বের ব্যালেন্স):</div>', unsafe_allow_html=True)
             
             l_r1_c1, l_r1_c2 = st.columns([7, 5])
             l_r1_c1.markdown('<div class="meta-label-vertical">Opening Vault Cash:</div>', unsafe_allow_html=True)
@@ -765,10 +762,10 @@ elif current_action == "Cash Management":
             
             placeholder_left_summary = st.empty()
 
-        # 🔴 ডান কলাম: PAY OUT
+        # 🔴 ডান কলাম: PAY OUT (খরচ/প্রদান)
         with main_col2:
-            st.markdown('<div class="hdr-red">🛸 PAY OUT </div>', unsafe_allow_html=True)
-            st.markdown('<div class="folder-lbl">📁 Closing Balances :</div>', unsafe_allow_html=True)
+            st.markdown('<div class="hdr-red">🛸 PAY OUT (খরচ/প্রদান)</div>', unsafe_allow_html=True)
+            st.markdown('<div class="folder-lbl">📁 Closing Balances (ম্যানুয়াল এন্ট্রি):</div>', unsafe_allow_html=True)
             
             r_r1_c1, r_r1_c2 = st.columns([7, 5])
             r_r1_c1.markdown('<div class="meta-label-vertical">Vault Cash:</div>', unsafe_allow_html=True)
@@ -802,9 +799,9 @@ elif current_action == "Cash Management":
         with grid_col1:
             st.markdown('<p style="color:#00ffaa; font-weight:bold; margin-bottom:0;">➕ আজকের জমা তালিকা (CASH RECEIVE):</p>', unsafe_allow_html=True)
             h_l1, h_l2, h_l3 = st.columns([5, 3, 4])
-            h_l1.markdown('<div class="table-column-title">Second Party Name </div>', unsafe_allow_html=True)
+            h_l1.markdown('<div class="table-column-title">সেকেন্ড পার্টি নাম</div>', unsafe_allow_html=True)
             h_l2.markdown('<div class="table-column-title">Amount ৳</div>', unsafe_allow_html=True)
-            h_l3.markdown('<div class="table-column-title">Remarks </div>', unsafe_allow_html=True)
+            h_l3.markdown('<div class="table-column-title">Remarks (বিবরণ)</div>', unsafe_allow_html=True)
             
             inputs_in = []
             for i in range(st.session_state.num_rows_in):
@@ -814,16 +811,16 @@ elif current_action == "Cash Management":
                 with r_l3: rem = st.text_input(f"r_in_{i}", label_visibility="collapsed", placeholder="-", key=f"c_r_in_{i}")
                 if p and a > 0: inputs_in.append((p, a, rem))
             
-            if st.button("➕ Add New Row", key="add_row_in_btn"):
+            if st.button("➕ আরও ১টি জমার রো বাড়ান", key="add_row_in_btn"):
                 st.session_state.num_rows_in += 1; st.rerun()
 
         # ডান পাশের ডাইনামিক রো (PAY OUT)
         with grid_col2:
-            st.markdown('<p style="color:#ff5555; font-weight:bold; margin-bottom:0;">➖ PAY OUT Detail :</p>', unsafe_allow_html=True)
+            st.markdown('<p style="color:#ff5555; font-weight:bold; margin-bottom:0;">➖ আজকের খরচ তালিকা (PAY OUT):</p>', unsafe_allow_html=True)
             h_r1, h_r2, h_r3 = st.columns([5, 3, 4])
-            h_r1.markdown('<div class="table-column-title">Second Party Name</div>', unsafe_allow_html=True)
+            h_r1.markdown('<div class="table-column-title">সেকেন্ড পার্টি নাম</div>', unsafe_allow_html=True)
             h_r2.markdown('<div class="table-column-title">Amount ৳</div>', unsafe_allow_html=True)
-            h_r3.markdown('<div class="table-column-title">Remarks</div>', unsafe_allow_html=True)
+            h_r3.markdown('<div class="table-column-title">Remarks (বিবরণ)</div>', unsafe_allow_html=True)
             
             inputs_out = []
             for i in range(st.session_state.num_rows_out):
@@ -833,7 +830,7 @@ elif current_action == "Cash Management":
                 with r_r3: rem = st.text_input(f"r_out_{i}", label_visibility="collapsed", placeholder="-", key=f"c_r_out_{i}")
                 if p and a > 0: inputs_out.append((p, a, rem))
             
-            if st.button("➕ Add New Row", key="add_row_out_btn"):
+            if st.button("➕ আরও ১টি খরচের রো বাড়ান", key="add_row_out_btn"):
                 st.session_state.num_rows_out += 1; st.rerun()
 
         # 🧮 রিয়েল-টাইম লাইভ ম্যাথমেটিক্যাল ক্যালকুলেশন এবং এলাইনমেন্ট লক
@@ -851,7 +848,7 @@ elif current_action == "Cash Management":
         # জমার দিকের এবং খরচের দিকের বটম লাইনগুলো সমান্তরাল লক করা
         placeholder_left_summary.markdown(f"""
             <div style="margin-top:10px;">
-                <div class="summary-label-vertical" style="display:inline-block; width:55%;">Today's Receive:</div>
+                <div class="summary-label-vertical" style="display:inline-block; width:55%;">Today's Receive (আজকের জমা):</div>
                 <div class="summary-value-vertical" style="display:inline-block; width:43%;">{total_today_receive:,.2f} ৳</div>
                 <hr class="meta-hr">
                 <div class="summary-label-vertical" style="display:inline-block; width:55%; font-weight:bold;">Grand Total:</div>
@@ -861,7 +858,7 @@ elif current_action == "Cash Management":
 
         placeholder_right_summary.markdown(f"""
             <div style="margin-top:10px;">
-                <div class="summary-label-vertical" style="display:inline-block; width:55%;">Today's Pay Out:</div>
+                <div class="summary-label-vertical" style="display:inline-block; width:55%;">Today's Pay Out (আজকের খরচ):</div>
                 <div class="summary-value-vertical" style="display:inline-block; width:43%;">{total_today_payout:,.2f} ৳</div>
                 <hr class="meta-hr">
                 <div class="summary-label-vertical" style="display:inline-block; width:55%; font-weight:bold;">Grand Total:</div>
@@ -869,9 +866,9 @@ elif current_action == "Cash Management":
             </div>
         """, unsafe_allow_html=True)
 
-        # 🔒 গ্লোবাল ডাটাবেজ সেভ বাটন
+        # 🔒 গলোবাল ডাটাবেজ সেভ বাটন
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🔒 Saved All Data", type="primary", use_container_width=True, key="save_cash_master_btn"):
+        if st.button("🔒 এই তারিখের সম্পূর্ণ খাতা একসাথে ডাটাবেজে সংরক্ষণ করুন", type="primary", use_container_width=True, key="save_cash_master_btn"):
             conn = sqlite3.connect(DB_NAME); cursor = conn.cursor()
             try:
                 cursor.execute("DELETE FROM cash_transactions WHERE company=? AND date=?", (current_company, date_str))
@@ -886,7 +883,7 @@ elif current_action == "Cash Management":
                 cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, '__SYS_DUE__', 'System Balance', ?, 'Closing Due')", (date_str, current_company, m_due))
                 
                 conn.commit()
-                st.toast(f"🎉 {date_str} Succesfuly Saved!", icon="✅")
+                st.toast(f"🎉 {date_str} তারিখের সম্পূর্ণ খাতা ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে!", icon="✅")
                 import time; time.sleep(0.4); st.rerun()
             except Exception as e: st.error(f"ডাটা সেভ করতে সমস্যা হয়েছে: {e}")
             finally: conn.close()
@@ -897,14 +894,14 @@ elif current_action == "Cash Management":
     with tab2:
         st.markdown("##### 📊 ক্যাশ লেনদেনের ডাইনামিক খতিয়ান ও ফিল্টার রিপোর্ট")
         f_col1, f_col2, f_col3, f_col4 = st.columns([2.5, 2.5, 4, 3])
-        with f_col1: start_d = st.date_input("Start Date", datetime.now().date().replace(day=1), key="cash_rep_start")
-        with f_col2: end_d = st.date_input("End Date", datetime.now().date(), key="cash_rep_end")
+        with f_col1: start_d = st.date_input("শুরুর তারিখ (Start Date)", datetime.now().date().replace(day=1), key="cash_rep_start")
+        with f_col2: end_d = st.date_input("শেষের তারিখ (End Date)", datetime.now().date(), key="cash_rep_end")
         with f_col3:
             conn = sqlite3.connect(DB_NAME)
             db_parties = [r[0] for r in conn.execute("SELECT party_name FROM second_parties WHERE company=? ORDER BY party_name ASC", (current_company,)).fetchall()]
             conn.close()
-            sel_party = st.selectbox("🎯 Select Party Name", options=["Parties "] + db_parties, key="cash_rep_party")
-        with f_col4: sel_type = st.selectbox("💸 Taransaction Type", options=["In & Out All At a glance, "Only Deposit", "Only Pay Out"], key="cash_rep_type")
+            sel_party = st.selectbox("🎯 নির্দিষ্ট সেকেন্ড পার্টি সিলেক্ট করুন", options=["সব খাতা একসাথে (All Parties)"] + db_parties, key="cash_rep_party")
+        with f_col4: sel_type = st.selectbox("💸 লেনদেনের ধরণ", options=["সব লেনদেন (In & Out)", "শুধু জমা (Cash In)", "শুধু খরচ (Cash Out)"], key="cash_rep_type")
             
         query = """
             SELECT date as 'তারিখ', second_party as 'সেকেন্ড পার্টি', type as 'ধরণ', amount as 'অ্যামাউন্ট (৳)', remarks as 'বিস্তারিত বিবরণ' 
@@ -912,9 +909,9 @@ elif current_action == "Cash Management":
             WHERE company=? AND type IN ('Cash In', 'Cash Out') AND date BETWEEN ? AND ?
         """
         params = [current_company, str(start_d), str(end_d)]
-        if sel_party != "All Parties": query += " AND second_party=?"; params.append(sel_party)
-        if sel_type == "Only Deposit": query += " AND type='Cash In'"
-        elif sel_type == "Only Pay Out": query += " AND type='Cash Out'"
+        if sel_party != "সব খাতা একসাথে (All Parties)": query += " AND second_party=?"; params.append(sel_party)
+        if sel_type == "শুধু জমা (Cash In)": query += " AND type='Cash In'"
+        elif sel_type == "শুধু খরচ (Cash Out)": query += " AND type='Cash Out'"
         query += " ORDER BY date DESC, id DESC"
         
         conn = sqlite3.connect(DB_NAME); report_df = pd.read_sql_query(query, conn, params=params); conn.close()
@@ -926,9 +923,9 @@ elif current_action == "Cash Management":
             
             st.markdown("<br>", unsafe_allow_html=True)
             m1, m2, m3 = st.columns(3)
-            m1.metric("🟢 Total Received", f"{t_in:,.2f} ৳")
-            m2.metric("🔴 Total Payout", f"{t_out:,.2f} ৳")
-            m3.metric("⚖️ Net Balance", f"{net_bal:,.2f} ৳", delta=f"{net_bal:,.2f} ৳")
+            m1.metric("🟢 সর্বমোট জমা (Total Received)", f"{t_in:,.2f} ৳")
+            m2.metric("🔴 সর্বমোট খরচ (Total Payout)", f"{t_out:,.2f} ৳")
+            m3.metric("⚖️ নিট লেনদেন ব্যালেন্স (Net Balance)", f"{net_bal:,.2f} ৳", delta=f"{net_bal:,.2f} ৳")
             
             st.markdown("---")
             st.dataframe(report_df, use_container_width=True, hide_index=True)
