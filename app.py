@@ -628,7 +628,7 @@ elif current_action == "Cash Management":
     if "num_rows_out" not in st.session_state: st.session_state.num_rows_out = 15
 
     # ক্যাশ ম্যানেজমেন্ট ট্যাব বিভাজন
-    tab1, tab2 = st.tabs(["📝 Daily Cash Khata", "📖 ক্যাশ রিপোর্ট ও খতিয়ান (Advanced Reports)"])
+    tab1, tab2 = st.tabs(["📝 Daily Cash Khata", "📖 View Cash Khata Report"])
 
     # ----------------------------------------------------------------------
     # 📝 ট্যাব ১: দৈনিক খাতা এন্ট্রি প্যানেল (এক্সেল আপলোড এবং এডিটেবল ভিউ)
