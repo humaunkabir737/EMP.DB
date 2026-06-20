@@ -670,7 +670,7 @@ elif current_action == "Cash Management":
         # 🟢 বাম কলাম: CASH RECEIVE (জমা)
         with main_col1:
             st.markdown('<div class="hdr-green">🛸 CASH RECEIVE (জমা)</div>', unsafe_allow_html=True)
-            st.markdown('<div class="folder-lbl">📁 Opening Cash (অটোমেটিক পূর্বের ব্যালেন্স):</div>', unsafe_allow_html=True)
+            st.markdown('<div class="folder-lbl">📁 Opening Cash</div>', unsafe_allow_html=True)
             
             l_r1_c1, l_r1_c2 = st.columns([7, 5])
             l_r1_c1.markdown('<div class="meta-label-vertical">Opening Vault Cash:</div>', unsafe_allow_html=True)
@@ -699,7 +699,7 @@ elif current_action == "Cash Management":
         # 🔴 ডান কলাম: PAY OUT (খরচ/প্রদান)
         with main_col2:
             st.markdown('<div class="hdr-red">🛸 PAY OUT (খরচ/প্রদান)</div>', unsafe_allow_html=True)
-            st.markdown('<div class="folder-lbl">📁 Closing Balances (ম্যানুয়াল এন্ট্রি):</div>', unsafe_allow_html=True)
+            st.markdown('<div class="folder-lbl">📁 Closing Balances</div>', unsafe_allow_html=True)
             
             r_r1_c1, r_r1_c2 = st.columns([7, 5])
             r_r1_c1.markdown('<div class="meta-label-vertical">Vault Cash:</div>', unsafe_allow_html=True)
