@@ -627,8 +627,8 @@ elif current_action == "Cash Management":
     """, unsafe_allow_html=True)
 
     # ডাইনামিক রো সংখ্যা ট্র্যাকিং সেশন স্টেট (ডিফল্ট ১৫ দিয়ে শুরু হবে, এক্সেলে বেশি থাকলে অটো বাড়বে)
-    if "num_rows_in" not in st.session_state: st.session_state.num_rows_in = 15
-    if "num_rows_out" not in st.session_state: st.session_state.num_rows_out = 15
+    if "num_rows_in" not in st.session_state: st.session_state.num_rows_in = 5
+    if "num_rows_out" not in st.session_state: st.session_state.num_rows_out = 5
 
     # ক্যাশ ম্যানেজমেন্ট ট্যাব বিভাজন
     tab1, tab2 = st.tabs(["📝 দৈনিক খাতা এন্ট্রি (Daily Sheet)", "📖 ক্যাশ রিপোর্ট ও খতিয়ান (Advanced Reports)"])
