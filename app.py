@@ -649,7 +649,7 @@ elif current_action == "Cash Management":
         conn.close()
 
         # 📥 এক্সেল ফাইল আপলোড সাব-সেকশন (নতুন সংযোজন)
-        with st.expander("📥 এক্সেল ফাইল থেকে অটো-ডাটা ইমপোর্ট করুন (Excel Upload)"):
+        with st.expander("📥 Excel Upload"):
             up_col1, up_col2 = st.columns([6, 4])
             with up_col1:
                 excel_file = st.file_uploader("Selecy Excel File (.xlsx)", type=["xlsx"], key="cash_excel_uploader")
