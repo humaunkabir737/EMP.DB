@@ -664,8 +664,8 @@ elif current_action == "Cash Management":
             
             # ছক সম্পূর্ণ ক্লিয়ার করার জন্য অতিরিক্ত রিসেট বাটন
             if st.button("🧹 ছক সম্পূর্ণ খালি করুন (Reset Form)", key="reset_cash_form_btn"):
-                st.session_state.num_rows_in = 15
-                st.session_state.num_rows_out = 15
+                st.session_state.num_rows_in = 5
+                st.session_state.num_rows_out = 5
                 for i in range(200): # সম্ভাব্য সব ঘর রিসেট
                     st.session_state[f"c_p_in_{i}"] = ""; st.session_state[f"c_a_in_{i}"] = 0.0; st.session_state[f"c_r_in_{i}"] = ""
                     st.session_state[f"c_p_out_{i}"] = ""; st.session_state[f"c_a_out_{i}"] = 0.0; st.session_state[f"c_r_out_{i}"] = ""
@@ -694,8 +694,8 @@ elif current_action == "Cash Management":
                             df_out = df[df['Type'].astype(str).str.upper().str.strip() == 'PAY OUT']
                             
                             # আপনার ২ নং প্রশ্নের সমাধান (অপশন খ): ডাটা অনুযায়ী ডাইনামিক রো নির্ধারণ
-                            st.session_state.num_rows_in = max(15, len(df_in))
-                            st.session_state.num_rows_out = max(15, len(df_out))
+                            st.session_state.num_rows_in = max(5, len(df_in))
+                            st.session_state.num_rows_out = max(5, len(df_out))
                             
                             # সেশন স্টেটে জমার ডাটা পুশ করা
                             for idx, row in enumerate(df_in.to_dict(orient='records')):
