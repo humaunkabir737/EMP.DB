@@ -569,6 +569,8 @@ elif current_action == "View All Second Parties":
 # 💵 সম্পূর্ণ রিফ্যাক্টর্ড অ্যাডভান্সড ক্যাশ ম্যানেজমেন্ট মডিউল (সংযুক্ত স্ক্রিনশট ৩.জেপিজি অনুযায়ী)
 # ==============================================================================
 elif current_action == "Cash Management":
+    st.markdown(f"### 💵 Cash Management ({current_company})")
+    
     # ১ নং ছবির সাথে ১০০% চেহারা ও নিখুঁত এলাইনমেন্ট মিলানোর জন্য কাস্টম CSS
     st.markdown("""
         <style>
@@ -624,195 +626,280 @@ elif current_action == "Cash Management":
         </style>
     """, unsafe_allow_html=True)
 
-    # ১. টপ বার: তারিখ সিলেকশন
-    col_top_left, col_top_right = st.columns([7, 3])
-    with col_top_left:
-        st.markdown("<p style='font-weight:bold; margin-top:8px;'>📅 ড্যাশবোর্ড তারিখ (Date)</p>", unsafe_allow_html=True)
-    with col_top_right:
-        tx_date = st.date_input("Date", datetime.now().date(), label_visibility="collapsed", key="master_sheet_date")
-    
-    date_str = str(tx_date)
-
-    # ডাটাবেজ থেকে একটিভ সেকেন্ড পার্টি লিস্ট নিয়ে আসা
-    conn = sqlite3.connect(DB_NAME)
-    parties = [r[0] for r in conn.execute("SELECT party_name FROM second_parties WHERE company=? AND status='Active' ORDER BY party_name ASC", (current_company,)).fetchall()]
-    conn.close()
-
-    # ডাটাবেজ থেকে অটোমেটিক পূর্বের দিনের শেষ সমাপনী ব্যালেন্স ট্র্যাক করা (যা আজকের ওপেনিং হবে)
-    conn = sqlite3.connect(DB_NAME)
-    prev_date_row = conn.execute("SELECT DISTINCT date FROM cash_transactions WHERE company=? AND date < ? AND type='System Balance' ORDER BY date DESC LIMIT 1", (current_company, date_str)).fetchone()
-    
-    op_vault_val, op_bank_val, op_adv_val, op_due_val = 0.0, 0.0, 0.0, 0.0
-    if prev_date_row:
-        prev_date = prev_date_row[0]
-        bal_rows = conn.execute("SELECT second_party, amount FROM cash_transactions WHERE company=? AND date=? AND type='System Balance'", (current_company, prev_date)).fetchall()
-        for sp, amt in bal_rows:
-            if sp == '__SYS_VAULT__': op_vault_val = amt
-            elif sp == '__SYS_BANK__': op_bank_val = amt
-            elif sp == '__SYS_ADVANCE__': op_adv_val = amt
-            elif sp == '__SYS_DUE__': op_due_val = amt
-    conn.close()
-    
-    total_opening_calc = op_vault_val + op_bank_val + op_adv_val + op_due_val
-
-    # আজকের লাইভ ডাটা এন্ট্রির মূল লে-আউট
-    main_col1, main_col2 = st.columns(2)
+    # ক্যাশ ম্যানেজমেন্টকে ২টা ট্যাবে বিভক্ত করা হলো (এন্ট্রি এবং আপনার কাঙ্ক্ষিত অ্যাডভান্সড রিপোর্ট)
+    tab1, tab2 = st.tabs(["📝 দৈনিক খাতা এন্ট্রি (Daily Sheet)", "📖 ক্যাশ রিপোর্ট ও খতিয়ান (Advanced Reports)"])
 
     # ----------------------------------------------------------------------
-    # 🟢 বাম কলাম: CASH RECEIVE (জমা)
+    # 📝 ট্যাব ১: দৈনিক খাতা এন্ট্রি প্যানেল (১৫ রো বিশিষ্ট নিখুঁত লেআউট)
     # ----------------------------------------------------------------------
-    with main_col1:
-        st.markdown('<div class="hdr-green">🛸 CASH RECEIVE (জমা)</div>', unsafe_allow_html=True)        
-        # ডানপাশের ইনপুট বক্সের সাথে উচ্চতা মেলাতে প্রতিটি রো কলাম আকারে সাজানো
-        l_r1_c1, l_r1_c2 = st.columns([7, 5])
-        l_r1_c1.markdown('<div class="meta-label-vertical">Opening Vault Cash:</div>', unsafe_allow_html=True)
-        l_r1_c2.markdown(f'<div class="meta-value-vertical">{op_vault_val:,.2f} ৳</div>', unsafe_allow_html=True)
-        l_r2_c1, l_r2_c2 = st.columns([7, 5])
-        l_r2_c1.markdown('<div class="meta-label-vertical">DM & DSS Bank:</div>', unsafe_allow_html=True)
-        l_r2_c2.markdown(f'<div class="meta-value-vertical">{op_bank_val:,.2f} ৳</div>', unsafe_allow_html=True)
-        l_r3_c1, l_r3_c2 = st.columns([7, 5])
-        l_r3_c1.markdown('<div class="meta-label-vertical">Market Advance:</div>', unsafe_allow_html=True)
-        l_r3_c2.markdown(f'<div class="meta-value-vertical">{op_adv_val:,.2f} ৳</div>', unsafe_allow_html=True)
-        l_r4_c1, l_r4_c2 = st.columns([7, 5])
-        l_r4_c1.markdown('<div class="meta-label-vertical">Others Due:</div>', unsafe_allow_html=True)
-        l_r4_c2.markdown(f'<div class="meta-value-vertical">{op_due_val:,.2f} ৳</div>', unsafe_allow_html=True)
-        st.markdown('<hr class="meta-hr">', unsafe_allow_html=True)
-        l_r5_c1, l_r5_c2 = st.columns([7, 5])
-        l_r5_c1.markdown('<div class="summary-label-vertical" style="color:#00ffaa; font-weight:bold;">Total Opening Cash:</div>', unsafe_allow_html=True)
-        l_r5_c2.markdown(f'<div class="summary-value-vertical" style="color:#00ffaa; font-weight:bold;">{total_opening_calc:,.2f} ৳</div>', unsafe_allow_html=True)
-        # Today's Receive হোল্ডার (লাইভ রিয়াকশনের জন্য)
-        placeholder_left_summary = st.empty()
-    # ----------------------------------------------------------------------
-    # 🔴 ডান কলাম: PAY OUT (খরচ/প্রদান)
-    # ----------------------------------------------------------------------
-    with main_col2:
-        st.markdown('<div class="hdr-red">🛸 PAY OUT </div>', unsafe_allow_html=True)      
-        # Vault Cash (ক্যালকুলেটেড টেক্সট রো)
-        r_r1_c1, r_r1_c2 = st.columns([7, 5])
-        r_r1_c1.markdown('<div class="meta-label-vertical">Vault Cash:</div>', unsafe_allow_html=True)
-        placeholder_vault_cash_text = r_r1_c2.empty() # নিচে লাইভ ক্যালকুলেশন পুশ হবে
-        # ৩টি ফিল্ড যা আপনি ম্যানুয়ালি এন্ট্রি করতে চেয়েছিলেন (Spinners ছাড়া ক্লিন বক্স)
-        r_r2_c1, r_r2_c2 = st.columns([7, 5])
-        r_r2_c1.markdown('<div class="meta-label-vertical">DM & DSS Bank:</div>', unsafe_allow_html=True)
-        m_bank = r_r2_c2.number_input("DM Bank Input", min_value=0.0, step=1.0, value=0.0, label_visibility="collapsed", key="m_inp_bank")
-        r_r3_c1, r_r3_c2 = st.columns([7, 5])
-        r_r3_c1.markdown('<div class="meta-label-vertical">Market Advance:</div>', unsafe_allow_html=True)
-        m_advance = r_r3_c2.number_input("Market Adv Input", min_value=0.0, step=1.0, value=0.0, label_visibility="collapsed", key="m_inp_advance")
-        r_r4_c1, r_r4_c2 = st.columns([7, 5])
-        r_r4_c1.markdown('<div class="meta-label-vertical">Others Due:</div>', unsafe_allow_html=True)
-        m_due = r_r4_c2.number_input("Others Due Input", min_value=0.0, step=1.0, value=0.0, label_visibility="collapsed", key="m_inp_due")
-        st.markdown('<hr class="meta-hr">', unsafe_allow_html=True)
-        # Total Closing Cash হোল্ডার
-        r_r5_c1, r_r5_c2 = st.columns([7, 3])
-        r_r5_c1.markdown('<div class="summary-label-vertical" style="color:#ff5555; font-weight:bold;">Total Closing Cash:</div>', unsafe_allow_html=True)
-        placeholder_total_closing_text = r_r5_c2.empty()
-        # Today's Pay Out ও Grand Total হোল্ডার
-        placeholder_right_summary = st.empty()
-    # ----------------------------------------------------------------------
-    # 📊 ১৫টি ডাটা এন্ট্রি রো মেকিং সেকশন (উভয় পাশে ১৫ টি করে)
-    # ----------------------------------------------------------------------
-    st.markdown("<br>", unsafe_allow_html=True)
-    grid_col1, grid_col2 = st.columns(2)
-    # বাম পাশের ১৫টি রো
-    with grid_col1:
-        st.markdown('<p style="color:#00ffaa; font-weight:bold; margin-bottom:0;">➕ আজকের জমা তালিকা (CASH RECEIVE):</p>', unsafe_allow_html=True)
-        h_l1, h_l2, h_l3 = st.columns([5, 3, 4])
-        h_l1.markdown('<div class="table-column-title">সেকেন্ড পার্টি নাম</div>', unsafe_allow_html=True)
-        h_l2.markdown('<div class="table-column-title">Amount ৳</div>', unsafe_allow_html=True)
-        h_l3.markdown('<div class="table-column-title">Remarks (বিবরণ)</div>', unsafe_allow_html=True)
+    with tab1:
+        # টপ বার: তারিখ সিলেকশন
+        col_top_left, col_top_right = st.columns([7, 3])
+        with col_top_left:
+            st.markdown("<p style='font-weight:bold; margin-top:8px;'>📅 ড্যাশবোর্ড তারিখ (Date)</p>", unsafe_allow_html=True)
+        with col_top_right:
+            tx_date = st.date_input("Date", datetime.now().date(), label_visibility="collapsed", key="master_sheet_date")
         
-        inputs_in = []
-        for i in range(15): # ৫ থেকে বাড়িয়ে ১৫ রো করা হলো
-            r_l1, r_l2, r_l3 = st.columns([5, 3, 4])
-            with r_l1:
-                p = st.selectbox(f"p_in_{i}", [""] + parties, label_visibility="collapsed", key=f"c_p_in_{i}")
-            with r_l2:
-                a = st.number_input(f"a_in_{i}", min_value=0.0, step=1.0, value=0.0, label_visibility="collapsed", key=f"c_a_in_{i}")
-            with r_l3:
-                rem = st.text_input(f"r_in_{i}", label_visibility="collapsed", placeholder="-", key=f"c_r_in_{i}")
-            if p and a > 0:
-                inputs_in.append((p, a, rem))
-    # ডান পাশের ১৫টি রো
-    with grid_col2:
-        st.markdown('<p style="color:#ff5555; font-weight:bold; margin-bottom:0;">➖ আজকের খরচ তালিকা (PAY OUT):</p>', unsafe_allow_html=True)
-        h_r1, h_r2, h_r3 = st.columns([5, 3, 4])
-        h_r1.markdown('<div class="table-column-title">সেকেন্ড পার্টি নাম</div>', unsafe_allow_html=True)
-        h_r2.markdown('<div class="table-column-title">Amount ৳</div>', unsafe_allow_html=True)
-        h_r3.markdown('<div class="table-column-title">Remarks (বিবরণ)</div>', unsafe_allow_html=True)
-        inputs_out = []
-        for i in range(15): # ৫ থেকে বাড়িয়ে ১৫ রো করা হলো
-            r_r1, r_r2, r_r3 = st.columns([5, 3, 4])
-            with r_r1:
-                p = st.selectbox(f"p_out_{i}", [""] + parties, label_visibility="collapsed", key=f"c_p_out_{i}")
-            with r_r2:
-                a = st.number_input(f"a_out_{i}", min_value=0.0, step=1.0, value=0.0, label_visibility="collapsed", key=f"c_a_out_{i}")
-            with r_r3:
-                rem = st.text_input(f"r_out_{i}", label_visibility="collapsed", placeholder="-", key=f"c_r_out_{i}")
-            if p and a > 0:
-                inputs_out.append((p, a, rem))
+        date_str = str(tx_date)
+
+        # ডাটাবেজ থেকে একটিভ সেকেন্ড পার্টি লিস্ট নিয়ে আসা
+        conn = sqlite3.connect(DB_NAME)
+        parties = [r[0] for r in conn.execute("SELECT party_name FROM second_parties WHERE company=? AND status='Active' ORDER BY party_name ASC", (current_company,)).fetchall()]
+        conn.close()
+
+        # ডাটাবেজ থেকে অটোমেটিক পূর্বের দিনের শেষ সমাপনী ব্যালেন্স ট্র্যাক করা (যা আজকের ওপেনিং হবে)
+        conn = sqlite3.connect(DB_NAME)
+        prev_date_row = conn.execute("SELECT DISTINCT date FROM cash_transactions WHERE company=? AND date < ? AND type='System Balance' ORDER BY date DESC LIMIT 1", (current_company, date_str)).fetchone()
+        
+        op_vault_val, op_bank_val, op_adv_val, op_due_val = 0.0, 0.0, 0.0, 0.0
+        if prev_date_row:
+            prev_date = prev_date_row[0]
+            bal_rows = conn.execute("SELECT second_party, amount FROM cash_transactions WHERE company=? AND date=? AND type='System Balance'", (current_company, prev_date)).fetchall()
+            for sp, amt in bal_rows:
+                if sp == '__SYS_VAULT__': op_vault_val = amt
+                elif sp == '__SYS_BANK__': op_bank_val = amt
+                elif sp == '__SYS_ADVANCE__': op_adv_val = amt
+                elif sp == '__SYS_DUE__': op_due_val = amt
+        conn.close()
+        
+        total_opening_calc = op_vault_val + op_bank_val + op_adv_val + op_due_val
+
+        # আজকের লাইভ ডাটা এন্ট্রির মূল লে-আউট
+        main_col1, main_col2 = st.columns(2)
+
+        # 🟢 বাম কলাম: CASH RECEIVE (জমা)
+        with main_col1:
+            st.markdown('<div class="hdr-green">🛸 CASH RECEIVE (জমা)</div>', unsafe_allow_html=True)
+            st.markdown('<div class="folder-lbl">📁 Opening Cash (অটোমেটিক পূর্বের ব্যালেন্স):</div>', unsafe_allow_html=True)
+            
+            l_r1_c1, l_r1_c2 = st.columns([7, 5])
+            l_r1_c1.markdown('<div class="meta-label-vertical">Opening Vault Cash:</div>', unsafe_allow_html=True)
+            l_r1_c2.markdown(f'<div class="meta-value-vertical">{op_vault_val:,.2f} ৳</div>', unsafe_allow_html=True)
+            
+            l_r2_c1, l_r2_c2 = st.columns([7, 5])
+            l_r2_c1.markdown('<div class="meta-label-vertical">DM & DSS Bank:</div>', unsafe_allow_html=True)
+            l_r2_c2.markdown(f'<div class="meta-value-vertical">{op_bank_val:,.2f} ৳</div>', unsafe_allow_html=True)
+            
+            l_r3_c1, l_r3_c2 = st.columns([7, 5])
+            l_r3_c1.markdown('<div class="meta-label-vertical">Market Advance:</div>', unsafe_allow_html=True)
+            l_r3_c2.markdown(f'<div class="meta-value-vertical">{op_adv_val:,.2f} ৳</div>', unsafe_allow_html=True)
+            
+            l_r4_c1, l_r4_c2 = st.columns([7, 5])
+            l_r4_c1.markdown('<div class="meta-label-vertical">Others Due:</div>', unsafe_allow_html=True)
+            l_r4_c2.markdown(f'<div class="meta-value-vertical">{op_due_val:,.2f} ৳</div>', unsafe_allow_html=True)
+            
+            st.markdown('<hr class="meta-hr">', unsafe_allow_html=True)
+            
+            l_r5_c1, l_r5_c2 = st.columns([7, 5])
+            l_r5_c1.markdown('<div class="summary-label-vertical" style="color:#00ffaa; font-weight:bold;">Total Opening Cash:</div>', unsafe_allow_html=True)
+            l_r5_c2.markdown(f'<div class="summary-value-vertical" style="color:#00ffaa; font-weight:bold;">{total_opening_calc:,.2f} ৳</div>', unsafe_allow_html=True)
+            
+            placeholder_left_summary = st.empty()
+
+        # 🔴 ডান কলাম: PAY OUT (খরচ/প্রদান)
+        with main_col2:
+            st.markdown('<div class="hdr-red">🛸 PAY OUT (খরচ/প্রদান)</div>', unsafe_allow_html=True)
+            st.markdown('<div class="folder-lbl">📁 Closing Balances (ম্যানুয়াল এন্ট্রি):</div>', unsafe_allow_html=True)
+            
+            r_r1_c1, r_r1_c2 = st.columns([7, 5])
+            r_r1_c1.markdown('<div class="meta-label-vertical">Vault Cash:</div>', unsafe_allow_html=True)
+            placeholder_vault_cash_text = r_r1_c2.empty()
+            
+            r_r2_c1, r_r2_c2 = st.columns([7, 5])
+            r_r2_c1.markdown('<div class="meta-label-vertical">DM & DSS Bank:</div>', unsafe_allow_html=True)
+            m_bank = r_r2_c2.number_input("DM Bank Input", min_value=0.0, step=1.0, value=0.0, label_visibility="collapsed", key="m_inp_bank")
+            
+            r_r3_c1, r_r3_c2 = st.columns([7, 5])
+            r_r3_c1.markdown('<div class="meta-label-vertical">Market Advance:</div>', unsafe_allow_html=True)
+            m_advance = r_r3_c2.number_input("Market Adv Input", min_value=0.0, step=1.0, value=0.0, label_visibility="collapsed", key="m_inp_advance")
+            
+            r_r4_c1, r_r4_c2 = st.columns([7, 5])
+            r_r4_c1.markdown('<div class="meta-label-vertical">Others Due:</div>', unsafe_allow_html=True)
+            m_due = r_r4_c2.number_input("Others Due Input", min_value=0.0, step=1.0, value=0.0, label_visibility="collapsed", key="m_inp_due")
+            
+            st.markdown('<hr class="meta-hr">', unsafe_allow_html=True)
+            
+            r_r5_c1, r_r5_c2 = st.columns([7, 5])
+            r_r5_c1.markdown('<div class="summary-label-vertical" style="color:#ff5555; font-weight:bold;">Total Closing Cash:</div>', unsafe_allow_html=True)
+            placeholder_total_closing_text = r_r5_c2.empty()
+            
+            placeholder_right_summary = st.empty()
+
+        # 📊 ১৫টি ডাটা এন্ট্রি রো মেকিং সেকশন (উভয় পাশে ১৫ টি করে)
+        st.markdown("<br>", unsafe_allow_html=True)
+        grid_col1, grid_col2 = st.columns(2)
+        
+        # বাম পাশের ১৫টি রো
+        with grid_col1:
+            st.markdown('<p style="color:#00ffaa; font-weight:bold; margin-bottom:0;">➕ আজকের জমা তালিকা (CASH RECEIVE):</p>', unsafe_allow_html=True)
+            h_l1, h_l2, h_l3 = st.columns([5, 3, 4])
+            h_l1.markdown('<div class="table-column-title">সেকেন্ড পার্টি নাম</div>', unsafe_allow_html=True)
+            h_l2.markdown('<div class="table-column-title">Amount ৳</div>', unsafe_allow_html=True)
+            h_l3.markdown('<div class="table-column-title">Remarks (বিবরণ)</div>', unsafe_allow_html=True)
+            
+            inputs_in = []
+            for i in range(15):
+                r_l1, r_l2, r_l3 = st.columns([5, 3, 4])
+                with r_l1: p = st.selectbox(f"p_in_{i}", [""] + parties, label_visibility="collapsed", key=f"c_p_in_{i}")
+                with r_l2: a = st.number_input(f"a_in_{i}", min_value=0.0, step=1.0, value=0.0, label_visibility="collapsed", key=f"c_a_in_{i}")
+                with r_l3: rem = st.text_input(f"r_in_{i}", label_visibility="collapsed", placeholder="-", key=f"c_r_in_{i}")
+                if p and a > 0: inputs_in.append((p, a, rem))
+
+        # ডান পাশের ১৫টি রো
+        with grid_col2:
+            st.markdown('<p style="color:#ff5555; font-weight:bold; margin-bottom:0;">➖ আজকের খরচ তালিকা (PAY OUT):</p>', unsafe_allow_html=True)
+            h_r1, h_r2, h_r3 = st.columns([5, 3, 4])
+            h_r1.markdown('<div class="table-column-title">সেকেন্ড পার্টি নাম</div>', unsafe_allow_html=True)
+            h_r2.markdown('<div class="table-column-title">Amount ৳</div>', unsafe_allow_html=True)
+            h_r3.markdown('<div class="table-column-title">Remarks (বিবরণ)</div>', unsafe_allow_html=True)
+            
+            inputs_out = []
+            for i in range(15):
+                r_r1, r_r2, r_r3 = st.columns([5, 3, 4])
+                with r_r1: p = st.selectbox(f"p_out_{i}", [""] + parties, label_visibility="collapsed", key=f"c_p_out_{i}")
+                with r_r2: a = st.number_input(f"a_out_{i}", min_value=0.0, step=1.0, value=0.0, label_visibility="collapsed", key=f"c_a_out_{i}")
+                with r_r3: rem = st.text_input(f"r_out_{i}", label_visibility="collapsed", placeholder="-", key=f"c_r_out_{i}")
+                if p and a > 0: inputs_out.append((p, a, rem))
+
+        # 🧮 রিয়েল-টাইম ম্যাথমেটিক্যাল ক্যালকুলেশন এবং এলাইনমেন্ট লক
+        total_today_receive = sum(x[1] for x in inputs_in)
+        grand_total_receive = total_opening_calc + total_today_receive
+        total_today_payout = sum(x[1] for x in inputs_out)
+        
+        cl_vault = grand_total_receive - total_today_payout - (m_bank + m_advance + m_due)
+        total_closing_calc = cl_vault + m_bank + m_advance + m_due
+        grand_total_payout = total_today_payout + total_closing_calc 
+
+        placeholder_vault_cash_text.markdown(f'<div class="meta-value-vertical">{cl_vault:,.2f} ৳</div>', unsafe_allow_html=True)
+        placeholder_total_closing_text.markdown(f'<div class="summary-value-vertical" style="color:#ff5555; font-weight:bold;">{total_closing_calc:,.2f} ৳</div>', unsafe_allow_html=True)
+
+        # Today's Receive এবং Today's Pay Out একদম একই সমান্তরাল লাইনে ডিসপ্লে লক করার কোড
+        placeholder_left_summary.markdown(f"""
+            <div style="margin-top:10px;">
+                <div class="summary-label-vertical" style="display:inline-block; width:55%;">Today's Receive (আজকের জমা):</div>
+                <div class="summary-value-vertical" style="display:inline-block; width:43%;">{total_today_receive:,.2f} ৳</div>
+                <hr class="meta-hr">
+                <div class="summary-label-vertical" style="display:inline-block; width:55%; font-weight:bold;">Grand Total:</div>
+                <div class="summary-grand-value" style="display:inline-block; width:43%;">{grand_total_receive:,.2f} ৳</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        placeholder_right_summary.markdown(f"""
+            <div style="margin-top:10px;">
+                <div class="summary-label-vertical" style="display:inline-block; width:55%;">Today's Pay Out (আজকের খরচ):</div>
+                <div class="summary-value-vertical" style="display:inline-block; width:43%;">{total_today_payout:,.2f} ৳</div>
+                <hr class="meta-hr">
+                <div class="summary-label-vertical" style="display:inline-block; width:55%; font-weight:bold;">Grand Total:</div>
+                <div class="summary-grand-value" style="display:inline-block; width:43%; color:#ff5555;">{grand_total_payout:,.2f} ৳</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # 🔒 গলোবাল ডাটাবেজ সেভ বাটন
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("🔒 এই তারিখের সম্পূর্ণ খাতা একসাথে ডাটাবেজে সংরক্ষণ করুন", type="primary", use_container_width=True, key="save_cash_master_btn"):
+            conn = sqlite3.connect(DB_NAME); cursor = conn.cursor()
+            try:
+                cursor.execute("DELETE FROM cash_transactions WHERE company=? AND date=?", (current_company, date_str))
+                for p, a, rem in inputs_in:
+                    cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, ?, 'Cash In', ?, ?)", (date_str, current_company, p, a, rem))
+                for p, a, rem in inputs_out:
+                    cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, ?, 'Cash Out', ?, ?)", (date_str, current_company, p, a, rem))
+                
+                cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, '__SYS_VAULT__', 'System Balance', ?, 'Closing Vault')", (date_str, current_company, cl_vault))
+                cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, '__SYS_BANK__', 'System Balance', ?, 'Closing Bank')", (date_str, current_company, m_bank))
+                cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, '__SYS_ADVANCE__', 'System Balance', ?, 'Closing Advance')", (date_str, current_company, m_advance))
+                cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, '__SYS_DUE__', 'System Balance', ?, 'Closing Due')", (date_str, current_company, m_due))
+                
+                conn.commit()
+                st.toast(f"🎉 {date_str} তারিখের সম্পূর্ণ খাতা ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে!", icon="✅")
+                import time; time.sleep(0.4); st.rerun()
+            except Exception as e: st.error(f"ডাটা সেভ করতে সমস্যা হয়েছে: {e}")
+            finally: conn.close()
+
     # ----------------------------------------------------------------------
-    # 🧮 রিয়েল-টাইম লাইভ ম্যাথমেটিক্যাল ক্যালকুলেশন এবং এলাইনমেন্ট লক
+    # 📖 ট্যাব ২: ক্যাশ রিপোর্ট ও খতিয়ান প্যানেল (আপনার কাঙ্ক্ষিত নতুন মডিউল)
     # ----------------------------------------------------------------------
-    total_today_receive = sum(x[1] for x in inputs_in)
-    grand_total_receive = total_opening_calc + total_today_receive
-    total_today_payout = sum(x[1] for x in inputs_out)    
-    # আপনার দেওয়া গাণিতিক শর্তাবলী ও ফর্মুলা রুলস:
-    # Grand Total (Left) = Grand Total (Right) হতে হবে
-    # Vault Cash = Grand Total Receive - Today's Pay Out - (ম্যানুয়াল ব্যাংক + ম্যানুয়াল এডভান্স + ম্যানুয়াল ডিউ)
-    cl_vault = grand_total_receive - total_today_payout - (m_bank + m_advance + m_due)
-    total_closing_calc = cl_vault + m_bank + m_advance + m_due
-    grand_total_payout = total_today_payout + total_closing_calc # আপনার কাঙ্ক্ষিত সূত্র: Grand Total = Today's Pay Out + Total Closing Cash
-     # ডাইনামিক ফিল্ডগুলোতে লাইভ ডেটা পুশ (একদম সমান লাইনে ডিসপ্লে করার ব্যবস্থা)
-    placeholder_vault_cash_text.markdown(f'<div class="meta-value-vertical">{cl_vault:,.2f} ৳</div>', unsafe_allow_html=True)
-    placeholder_total_closing_text.markdown(f'<div class="summary-value-vertical" style="color:#ff5555; font-weight:bold;">{total_closing_calc:,.2f} ৳</div>', unsafe_allow_html=True)
-    # জমার দিকের নিচের অংশ (Today's Receive এবং Grand Total)
-    placeholder_left_summary.markdown(f"""
-        <div style="margin-top:10px;">
-            <div class="summary-label-vertical" style="display:inline-block; width:55%;">Today's Receive (আজকের জমা):</div>
-            <div class="summary-value-vertical" style="display:inline-block; width:43%;">{total_today_receive:,.2f} ৳</div>
-            <hr class="meta-hr">
-            <div class="summary-label-vertical" style="display:inline-block; width:55%; font-weight:bold;">Grand Total:</div>
-            <div class="summary-grand-value" style="display:inline-block; width:43%;">{grand_total_receive:,.2f} ৳</div>
-        </div>
-    """, unsafe_allow_html=True)
-    # খরচের দিকের নিচের অংশ (Today's Pay Out এবং Grand Total) - এটি বাম পাশের সাথে নিখুঁতভাবে একই লাইনে এলাইন হবে
-    placeholder_right_summary.markdown(f"""
-        <div style="margin-top:10px;">
-            <div class="summary-label-vertical" style="display:inline-block; width:55%;">Today's Pay Out (আজকের খরচ):</div>
-            <div class="summary-value-vertical" style="display:inline-block; width:43%;">{total_today_payout:,.2f} ৳</div>
-            <hr class="meta-hr">
-            <div class="summary-label-vertical" style="display:inline-block; width:55%; font-weight:bold;">Grand Total:</div>
-            <div class="summary-grand-value" style="display:inline-block; width:43%; color:#ff5555;">{grand_total_payout:,.2f} ৳</div>
-        </div>
-    """, unsafe_allow_html=True)
-    # 🔒 ৬. গলোবাল ডাটাবেজ সেভ বাটন
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🔒 এই তারিখের সম্পূর্ণ খাতা একসাথে ডাটাবেজে সংরক্ষণ করুন", type="primary", use_container_width=True):
-        conn = sqlite3.connect(DB_NAME); cursor = conn.cursor()
-        try:
-            # ডুপ্লিকেট এড়াতে আজকের তারিখের খাতা আগে ক্লিন করা হবে
-            cursor.execute("DELETE FROM cash_transactions WHERE company=? AND date=?", (current_company, date_str))
-            # জমার ডাটা সেভ
-            for p, a, rem in inputs_in:
-                cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, ?, 'Cash In', ?, ?)", (date_str, current_company, p, a, rem))
-            
-            # খরচের ডাটা সেভ
-            for p, a, rem in inputs_out:
-                cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, ?, 'Cash Out', ?, ?)", (date_str, current_company, p, a, rem))
-            
-            # আজকের দিনের ক্লোজিং ব্যালেন্সগুলো ডাটাবেজে লক করা (যা পরবর্তী দিনের খাতা খোলার সময় অটোমেটিক ওপেনিং হয়ে লোড হবে)
-            cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, '__SYS_VAULT__', 'System Balance', ?, 'Closing Vault')", (date_str, current_company, cl_vault))
-            cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, '__SYS_BANK__', 'System Balance', ?, 'Closing Bank')", (date_str, current_company, m_bank))
-            cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, '__SYS_ADVANCE__', 'System Balance', ?, 'Closing Advance')", (date_str, current_company, m_advance))
-            cursor.execute("INSERT INTO cash_transactions (date, company, second_party, type, amount, remarks) VALUES (?, ?, '__SYS_DUE__', 'System Balance', ?, 'Closing Due')", (date_str, current_company, m_due))
-            
-            conn.commit()
-            st.toast(f"🎉 {date_str} তারিখের সম্পূর্ণ খাতা ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে!", icon="✅")
-            import time; time.sleep(0.4); st.rerun()
-        except Exception as e: 
-            st.error(f"ডাটা সেভ করতে সমস্যা হয়েছে: {e}")
-        finally: 
+    with tab2:
+        st.markdown("##### 📊 ক্যাশ লেনদেনের ডাইনামিক খতিয়ান ও ফিল্টার রিপোর্ট")
+        st.markdown("🌐 **ফিল্টার অপশনসমূহ সিলেক্ট করুন:**", unsafe_allow_html=True)
+        
+        # ফিল্টার রো লেআউট
+        f_col1, f_col2, f_col3, f_col4 = st.columns([2.5, 2.5, 4, 3])
+        with f_col1:
+            start_d = st.date_input("শুরুর তারিখ (Start Date)", datetime.now().date().replace(day=1), key="cash_rep_start")
+        with f_col2:
+            end_d = st.date_input("শেষের তারিখ (End Date)", datetime.now().date(), key="cash_rep_end")
+        with f_col3:
+            conn = sqlite3.connect(DB_NAME)
+            db_parties = [r[0] for r in conn.execute("SELECT party_name FROM second_parties WHERE company=? ORDER BY party_name ASC", (current_company,)).fetchall()]
             conn.close()
+            sel_party = st.selectbox("🎯 নির্দিষ্ট সেকেন্ড পার্টি সিলেক্ট করুন", options=["সব খাতা একসাথে (All Parties)"] + db_parties, key="cash_rep_party")
+        with f_col4:
+            sel_type = st.selectbox("💸 লেনদেনের ধরণ", options=["সব লেনদেন (In & Out)", "শুধু জমা (Cash In)", "শুধু খরচ (Cash Out)"], key="cash_rep_type")
+            
+        # ডাটাবেজ থেকে ডাইনামিক কুয়েরি ফিল্টারিং লজিক (সিস্টেম ব্যালেন্স বাদে শুধু পিওর ট্রানজেকশন ট্র্যাকিং)
+        query = """
+            SELECT date as 'তারিখ', second_party as 'সেকেন্ড পার্টি', type as 'ধরণ', amount as 'অ্যামাউন্ট (৳)', remarks as 'বিস্তারিত বিবরণ' 
+            FROM cash_transactions 
+            WHERE company=? AND type IN ('Cash In', 'Cash Out') AND date BETWEEN ? AND ?
+        """
+        params = [current_company, str(start_d), str(end_d)]
+        
+        if sel_party != "সব খাতা একসাথে (All Parties)":
+            query += " AND second_party=?"
+            params.append(sel_party)
+            
+        if sel_type == "শুধু জমা (Cash In)":
+            query += " AND type='Cash In'"
+        elif sel_type == "শুধু খরচ (Cash Out)":
+            query += " AND type='Cash Out'"
+            
+        query += " ORDER BY date DESC, id DESC"
+        
+        conn = sqlite3.connect(DB_NAME)
+        report_df = pd.read_sql_query(query, conn, params=params)
+        conn.close()
+        
+        # রিপোর্ট প্রদর্শন
+        if not report_df.empty:
+            # লাইভ মেট্রিকে টোটাল সামারি ক্যালকুলেশন
+            t_in = report_df[report_df['ধরণ'] == 'Cash In']['অ্যামাউন্ট (৳)'].sum()
+            t_out = report_df[report_df['ধরণ'] == 'Cash Out']['অ্যামাউন্ট (৳)'].sum()
+            net_bal = t_in - t_out
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            m1, m2, m3 = st.columns(3)
+            m1.metric("🟢 সর্বমোট জমা (Total Received)", f"{t_in:,.2f} ৳")
+            m2.metric("🔴 সর্বমোট খরচ (Total Payout)", f"{t_out:,.2f} ৳")
+            m3.metric("⚖️ নিট লেনদেন ব্যালেন্স (Net Balance)", f"{net_bal:,.2f} ৳", delta=f"{net_bal:,.2f} ৳")
+            
+            st.markdown("---")
+            st.markdown("📝 **ফিল্টারকৃত বিস্তারিত লেনদেনের খাতা (Ledger Sheet):**")
+            st.dataframe(report_df, use_container_width=True, hide_index=True)
+            
+            # 🔥 অতিরিক্ত বোনাস ফিচার: পার্টি-ভিত্তিক অটোমেটিক সামারি ব্রেকডাউন রিপোর্ট
+            st.markdown("<br>📊 **পার্টি-ভিত্তিক পুঞ্জীভূত সারসংক্ষেপ (Party Summary Breakdown):**", unsafe_allow_html=True)
+            summary_query = """
+                SELECT second_party as 'সেকেন্ড পার্টি',
+                       SUM(CASE WHEN type='Cash In' THEN amount ELSE 0 END) as 'মোট জমা (৳)',
+                       SUM(CASE WHEN type='Cash Out' THEN amount ELSE 0 END) as 'মোট খরচ (৳)'
+                FROM cash_transactions 
+                WHERE company=? AND type IN ('Cash In', 'Cash Out') AND date BETWEEN ? AND ?
+            """
+            sum_params = [current_company, str(start_d), str(end_d)]
+            if sel_party != "সব খাতা একসাথে (All Parties)":
+                summary_query += " AND second_party=?"
+                sum_params.append(sel_party)
+            summary_query += " GROUP BY second_party ORDER BY second_party ASC"
+            
+            conn = sqlite3.connect(DB_NAME)
+            sum_df = pd.read_sql_query(summary_query, conn, params=sum_params)
+            conn.close()
+            
+            sum_df['পার্থক্য / নিট ক্যাশ প্রভাব (৳)'] = sum_df['মোট জমা (৳)'] - sum_df['মোট খরচ (৳)']
+            st.dataframe(sum_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("ℹ️ নির্বাচিত ফিল্টার শর্ত ও তারিখ সীমার মধ্যে কোনো লেনদেনের রেকর্ড পাওয়া যায়নি।")
 # ==============================================================================
 # লজিক: Expense Management মডিউল 
 # ==============================================================================
