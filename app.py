@@ -671,14 +671,7 @@ elif current_action == "Cash Management":
     # ইন্টারফেসের চেহারা ও ইনপুট বক্সের এলাইনমেন্ট নিখুঁত করার জন্য কাস্টম CSS ইনজেকশন
     st.markdown("""
         <style>
-        /* নাম্বার ইনপুটের আপ-ডাউন (+/-) বাটন সম্পূর্ণ হাইড করার সিএসএস */
-        button[data-testid="stNumberInputStepDown"], 
-        button[data-testid="stNumberInputStepUp"] {
-            display: none !important;
-        }
-        div[data-testid="stNumberInput"] input {
-            padding-right: 10px !important;
-        }
+
         /* ইনপুট বক্সগুলোর মাঝখানের অতিরিক্ত ফাঁকা জায়গা (Padding) কমানো */
         div[data-testid="element-container"] {
             margin-bottom: 5px !important;
