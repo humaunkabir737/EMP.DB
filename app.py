@@ -231,7 +231,7 @@ def render_header():
     header_content = f'<div style="display: flex; justify-content: center; align-items: center; gap: 12px;">{logo_html}{title_text}</div>' if has_logo else title_text
     
     st.markdown(f"""
-        <div style="text-align: center; margin-top: -20px; margin-bottom: 1px;">
+        <div style="text-align: center; margin-top: -10px; margin-bottom: 1px;">
             {header_content}
             <p style="color: #a0a0a0; margin: -8px 0 0 0; font-size: 14.5px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>
         </div>
