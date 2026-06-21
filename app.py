@@ -96,12 +96,23 @@ GUAR_NID_DIR = os.path.join(BASE_DIR, "guarantor_nids")
 # ৩. ডাটাবেজ এবং অ্যাডভান্সড মাইগ্রেশন লজিক (সম্পূর্ণ নতুন এবং ফিক্সড কোড)
 # ==============================================================================
 def init_db():
-    for folder in [UPLOAD_DIR, IMAGE_DIR, PHOTO_DIR, EMP_NID_DIR, GUAR_PHOTO_DIR, GUAR_NID_DIR]:
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+    # টেবিল না থাকলে তৈরি করা
+    cursor.execute("CREATE TABLE IF NOT EXISTS employees (emp_id TEXT PRIMARY KEY, name TEXT)")
+    
+    # নতুন কলামগুলো ডাটাবেজে আছে কি না চেক করা এবং না থাকলে যোগ করা
+    new_columns = ['designation', 'mobile', 'alt_contact', 'join_date', 'basic_salary', 'variable_salary', 'total_salary', 'company', 'father_name', 'father_nid', 'mother_name', 'emp_nid', 'guarantor_name', 'guarantor_nid', 'guarantor_mobile']
+    
+    cursor.execute("PRAGMA table_info(employees)")
+    existing_columns = [col[1] for col in cursor.fetchall()]
+    
+    for col in new_columns:
+        if col not in existing_columns:
+            cursor.execute(f"ALTER TABLE employees ADD COLUMN {col} TEXT") # সাধারণত TEXT হিসেবে অ্যাড করা নিরাপদ
+    
+    conn.commit()
+    conn.close()
     
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS employees (
