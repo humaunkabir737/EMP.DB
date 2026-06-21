@@ -560,7 +560,11 @@ elif current_action == "Add Employee By Upload":
                     e_id = str(row.get('emp_id', '')).strip()
                     e_name = str(row.get('name', '')).strip()
                     
-                    # 💡 নোট: নিশ্চিত করুন যে e_des, e_mob, b_sal, v_sal, t_sal ভ্যারিয়েবলগুলো row থেকে অ্যাসাইন করা আছে।
+                    e_des = str(row.get('designation', 'Other')).strip()
+                    e_mob = str(row.get('mobile', '')).strip()
+                    b_sal = float(row.get('basic_salary', 0.0))
+                    v_sal = float(row.get('variable_salary', 0.0))
+                    t_sal = b_sal + v_sal
                     if e_id and e_name:
                         # ডাটাবেজে এই আইডিটি আগে থেকে আছে কিনা তা চেক করা হচ্ছে
                         cursor.execute("SELECT 1 FROM employees WHERE emp_id = ?", (e_id,))
