@@ -559,21 +559,25 @@ elif current_action == "Add New Employee":
 elif current_action == "Add Employee By Upload":
     st.markdown(f"### 📤 Bulk Import Employees ({current_company})")
     uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"]) # শুধুমাত্র এক্সেল ফাইল আপলোড অপশন
+    
     if uploaded_file:
         try:
             df = pd.read_excel(uploaded_file) # পান্ডাস দিয়ে এক্সেল ফাইল রিড করা
             st.dataframe(df.head(5), use_container_width=True) # প্রথম ৫টি রো প্রিভিউ হিসেবে দেখানো
+            
             if st.button("💾 Save"):
-                conn = sqlite3.connect(DB_NAME); cursor = conn.cursor()
+                conn = sqlite3.connect(DB_NAME)
+                cursor = conn.cursor()
+                
                 for _, row in df.iterrows(): # এক্সেলের প্রতিটি রো লুপের মাধ্যমে ডাটা প্রসেস করা
                     e_id = str(row.get('emp_id', '')).strip()
                     e_name = str(row.get('name', '')).strip()
-                    
                     e_des = str(row.get('designation', 'Other')).strip()
                     e_mob = str(row.get('mobile', '')).strip()
                     b_sal = float(row.get('basic_salary', 0.0))
                     v_sal = float(row.get('variable_salary', 0.0))
                     t_sal = b_sal + v_sal
+                    
                     if e_id and e_name:
                         # ডাটাবেজে এই আইডিটি আগে থেকে আছে কিনা তা চেক করা হচ্ছে
                         cursor.execute("SELECT 1 FROM employees WHERE emp_id = ?", (e_id,))
@@ -581,20 +585,20 @@ elif current_action == "Add Employee By Upload":
                             # আইডি অলরেডি থাকলে ফ্যামিলি ডাটা ও ছবি অক্ষত রেখে শুধু মৌলিক তথ্যগুলো আপডেট হবে
                             cursor.execute("""
                                 UPDATE employees 
-                                SET name=?, designation=?, mobile=?, basic_salary=?, variable_salary=?, total_salary=?, company=?
+                                SET name=?, designation=?, mobile=?, basic_salary=?, variable_salary=?, total_salary=?, company=? 
                                 WHERE emp_id=?
                             """, (e_name, e_des, e_mob, b_sal, v_sal, t_sal, current_company, e_id))
                         else:
                             # আইডি একদম নতুন হলে ডাটাবেজে নতুন রো হিসেবে ইনসার্ট হবে
                             cursor.execute("""
-                                INSERT INTO employees (emp_id, name, designation, mobile, basic_salary, variable_salary, total_salary, company)
+                                INSERT INTO employees (emp_id, name, designation, mobile, basic_salary, variable_salary, total_salary, company) 
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                             """, (e_id, e_name, e_des, e_mob, b_sal, v_sal, t_sal, current_company))
-                            
-                conn.commit() # সব ডাটা একসাথে ডাটাবেজে সেভ করা
-                conn.close()
+                
+                conn.commit() # সব ডাটা একসাথে লুপের বাইরে এসে ডাটাবেজে সেভ করা (নিরাপদ)
+                conn.close()  # কানেকশন লুপের বাইরে এসে ক্লোজ হবে
                 st.success("🎉 Bulk Employee Data Successfully Uploaded & Updated Without Any Data Loss!")
-        except Exception as e: 
+        except Exception as e:
             st.error(f"ভুল ফাইল ফরম্যাট: {e}")
 
 # ==============================================================================
