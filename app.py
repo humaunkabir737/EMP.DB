@@ -844,12 +844,15 @@ elif current_action == "Cash Management":
             
             r_r2_c1, r_r2_c2 = st.columns([7, 5])
             r_r2_c1.markdown('<div class="meta-label-vertical">DM & DSS Bank:</div>', unsafe_allow_html=True)
+            m_bank = r_r2_c2.number_input(min_value=0.0, step=1.0, key="m_inp_bank")
             
             r_r3_c1, r_r3_c2 = st.columns([7, 5])
             r_r3_c1.markdown('<div class="meta-label-vertical">Market Advance:</div>', unsafe_allow_html=True)
+            m_advance = r_r3_c2.number_input(min_value=0.0, step=1.0, key="m_inp_advance")
             
             r_r4_c1, r_r4_c2 = st.columns([7, 5])
             r_r4_c1.markdown('<div class="meta-label-vertical">Others Due:</div>', unsafe_allow_html=True)
+            m_due = r_r4_c2.number_input(min_value=0.0, step=1.0, key="m_inp_due")
             
             st.markdown('<hr class="meta-hr">', unsafe_allow_html=True)
             
