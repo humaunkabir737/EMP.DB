@@ -847,13 +847,70 @@ elif current_action == "Cash Management":
         """, unsafe_allow_html=True)
 
         # ─── [ধাপ ১] প্রধান হেডার অংশ (Header Row) ───
+# ==============================================================================
+        # 🟩 এজেন্ডা ১: প্রতিটি লাইনের মধ্যবর্তী গ্যাপ (Row-to-Row Gap) সর্বনিম্নকরণ
+        # ==============================================================================
+        st.markdown("""
+        <style>
+        /* 🚨 ১. প্রতিটি লাইনের মাঝখানের অতিরিক্ত ডিফল্ট গ্যাপ (১৬px থেকে কমিয়ে ৪px করা) */
+        div[data-testid="stVerticalBlock"] {
+            gap: 0.25rem !important; 
+        }
+        
+        /* ২. হরাইজন্টাল ব্লকের (st.columns) ওপর-নিচের মার্জিন সম্পূর্ণ জিরো করা */
+        div[data-testid="stHorizontalBlock"] {
+            margin-top: 0px !important;
+            margin-bottom: 0px !important;
+            padding-top: 0px !important;
+            padding-bottom: 0px !important;
+        }
+
+        /* ৩. ইনপুট বক্সের ভেতরের টেক্সটের ওপর-নিচের স্পেস সর্বনিম্ন ও উচ্চতা ২৮px এ লক */
+        .stNumberInput input {
+            padding-top: 0px !important;
+            padding-bottom: 0px !important;
+            height: 28px !important; 
+            line-height: 1 !important;
+            font-size: 14px !important;
+        }
+        
+        /* ৪. স্ট্রিমলিটের বেস-ইনপুট কন্টেইনারের হাইট ২৮px করা */
+        .stNumberInput div[data-baseweb="base-input"] {
+            height: 28px !important;
+            min-height: 28px !important;
+        }
+
+        /* ৫. বাম পাশের টেক্সট ও লেবেলের উচ্চতা ২৮px করে ডানের ইনপুট বক্সের সাথে সিঙ্ক করা */
+        .meta-label-vertical, .meta-value-vertical, 
+        .summary-label-vertical, .summary-value-vertical {
+            min-height: 28px !important;
+            height: 28px !important;
+            display: flex;
+            align-items: center; /* ভার্টিক্যালি একদম মাঝখানে থাকবে */
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .meta-value-vertical, .summary-value-vertical {
+            justify-content: flex-end;
+        }
+        
+        /* ৬. মাঝখানের ডিভাইডার বা অনুভূমিক রেখার বাড়তি গ্যাপ জিরো করা */
+        .meta-hr {
+            margin-top: 2px !important;
+            margin-bottom: 2px !important;
+            border: 0.5px solid #444 !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+        # ─── [ধাপ ১] প্রধান হেডার অংশ ───
         main_col1, main_col2 = st.columns(2)
         with main_col1:
             st.markdown('<div class="hdr-green">🛸 CASH RECEIVE (জমা)</div>', unsafe_allow_html=True)
-            st.markdown('<div class="folder-lbl">📁 Opening Cash (অটোমেটিক পূর্বের ব্যালেন্স):</div>', unsafe_allow_html=True)
+            st.markdown('<div class="folder-lbl" style="margin-bottom:0px;">📁 Opening Cash (অটোমেটিক পূর্বের ব্যালেন্স):</div>', unsafe_allow_html=True)
         with main_col2:
             st.markdown('<div class="hdr-red">🛸 PAY OUT (খরচ/প্রদান)</div>', unsafe_allow_html=True)
-            st.markdown('<div class="folder-lbl">📁 Closing Balances (ম্যানুয়াল এন্ট্রি):</div>', unsafe_allow_html=True)
+            st.markdown('<div class="folder-lbl" style="margin-bottom:0px;">📁 Closing Balances (ম্যানুয়াল এন্ট্রি):</div>', unsafe_allow_html=True)
 
         # ─── [ধাপ ২] রো ১: Vault Cash এলাইনমেন্ট লক ───
         row1_col1, row1_col2 = st.columns(2)
@@ -864,7 +921,7 @@ elif current_action == "Cash Management":
         with row1_col2:
             r_r1_c1, r_r1_c2 = st.columns([7, 5])
             r_r1_c1.markdown('<div class="meta-label-vertical">Vault Cash:</div>', unsafe_allow_html=True)
-            placeholder_vault_cash_text = r_r1_c2.empty() # ভল্ট ক্যাশ অটো ক্যালকুলেশনের স্লট
+            placeholder_vault_cash_text = r_r1_c2.empty()
 
         # ─── [ধাপ ৩] রো ২: DM & DSS Bank এলাইনমেন্ট লক ───
         row2_col1, row2_col2 = st.columns(2)
@@ -875,7 +932,6 @@ elif current_action == "Cash Management":
         with row2_col2:
             r_r2_c1, r_r2_c2 = st.columns([7, 5])
             r_r2_c1.markdown('<div class="meta-label-vertical">DM & DSS Bank:</div>', unsafe_allow_html=True)
-            # label_visibility="collapsed" দিয়ে ইনপুটের উপরের ফাঁকা জায়গা রিমুভ করা হয়েছে
             m_bank = r_r2_c2.number_input("", min_value=0.0, step=1.0, key="m_inp_bank", label_visibility="collapsed")
 
         # ─── [ধাপ ৪] রো ৩: Market Advance এলাইনমেন্ট লক ───
@@ -900,14 +956,14 @@ elif current_action == "Cash Management":
             r_r4_c1.markdown('<div class="meta-label-vertical">Others Due:</div>', unsafe_allow_html=True)
             m_due = r_r4_c2.number_input("", min_value=0.0, step=1.0, key="m_inp_due", label_visibility="collapsed")
 
-        # ─── [ধাপ ৬] অনুভূমিক রেখা অংশ (Horizontal Separator Row) ───
+        # ─── [ধাপ ৬] অনুভূমিক রেখা অংশ (ডিভাইডার) ───
         hr_col1, hr_col2 = st.columns(2)
         with hr_col1:
             st.markdown('<hr class="meta-hr">', unsafe_allow_html=True)
         with hr_col2:
             st.markdown('<hr class="meta-hr">', unsafe_allow_html=True)
 
-        # ─── [ধাপ ৭] রো ৫: Total Opening & Closing Cash এলাইনমেন্ট লক ───
+        # ─── [ধাপ ৭] রো ৫: Total Opening & Closing Cash ───
         row5_col1, row5_col2 = st.columns(2)
         with row5_col1:
             l_r5_c1, l_r5_c2 = st.columns([7, 5])
@@ -916,14 +972,14 @@ elif current_action == "Cash Management":
         with row5_col2:
             r_r5_c1, r_r5_c2 = st.columns([7, 5])
             r_r5_c1.markdown('<div class="summary-label-vertical" style="color:#ff5555; font-weight:bold;">Total Closing Cash:</div>', unsafe_allow_html=True)
-            placeholder_total_closing_text = r_r5_c2.empty() # মোট ক্লোজিং যোগফলের লাইভ স্লট
+            placeholder_total_closing_text = r_r5_c2.empty()
 
         # ─── [ধাপ ৮] রো ৬: লাইভ গ্র্যান্ড টোটাল প্লেসহোল্ডার স্লট ───
         row6_col1, row6_col2 = st.columns(2)
         with row6_col1:
-            placeholder_left_summary = st.empty() # নিচের লাইভ গ্র্যান্ড টোটাল জমার জন্য ফাকা স্লট
+            placeholder_left_summary = st.empty()
         with row6_col2:
-            placeholder_right_summary = st.empty() # নিচের লাইভ গ্র্যান্ড টোটাল খরচের জন্য ফাকা স্লট
+            placeholder_right_summary = st.empty()
         # 📊 ডাটা এন্ট্রি গ্রিড প্যানেল (লুপ ভিত্তিক ফর্ম কন্ট্রোল)
         st.markdown("<br>", unsafe_allow_html=True)
         grid_col1, grid_col2 = st.columns(2)
