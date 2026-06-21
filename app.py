@@ -224,7 +224,7 @@ def render_header():
             logo_html = f'<img src="data:image/{ext};base64,{encoded}" style="height:55px; vertical-align: middle;">'
             has_logo = True; break
     title_text = '<h1 style="color: white; margin: 0; font-family:\'Algerian\', serif; font-size: 38px; font-weight: bold;">M/S JABED ENTERPRISE</h1>'
-    header_content = f'<div style="display: flex; justify-content: center; align-items: center; gap: 12px;">{logo_html}{title_text}</div>' if has_logo else title_text
+    header_content = f'<div style="display: flex; justify-content: center; align-items: center; gap: 6px;">{logo_html}{title_text}</div>' if has_logo else title_text
     st.markdown(f"""
         <div style="text-align: center; margin-top: -15px; margin-bottom: 2px;">
             {header_content}
@@ -666,7 +666,7 @@ elif current_action == "Cash Management":
             margin-bottom: 2px !important;
         }
         div[data-testid="stHorizontalBlock"] {
-            gap: 12px !important;
+            gap: 6px !important;
         }
         /* হেডার ও ফোল্ডার টেক্সট স্টাইল */
         .hdr-green {
