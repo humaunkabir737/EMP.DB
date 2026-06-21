@@ -668,7 +668,7 @@ elif current_action == "View All Second Parties":
 elif current_action == "Cash Management":
     st.markdown(f"### 💵 Cash Management ({current_company})")
     
-    # ইন্টারফেসের চেহারা ও ইনপুট বক্সের এলাইনমেন্ট নিখুঁত করার জন্য কাস্টম CSS ইনজেকশন
+# ইন্টারফেসের চেহারা ও ইনপুট বক্সের এলাইনমেন্ট নিখুঁত করার জন্য কাস্টম CSS ইনজেকশন
     st.markdown("""
         <style>
         /* নাম্বার ইনপুটের আপ-ডাউন (+/-) বাটন সম্পূর্ণ হাইড করার সিএসএস */
@@ -686,6 +686,8 @@ elif current_action == "Cash Management":
         div[data-testid="stHorizontalBlock"] {
             gap: 12px !important;
         }
+        </style>
+    """, unsafe_allow_html=True)
         /* হেডার ও ফোল্ডার টেক্সট স্টাইল */
         .hdr-green {
             background-color: #0d533f; color: white; padding: 8px 15px;
