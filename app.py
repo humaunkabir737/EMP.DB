@@ -238,12 +238,11 @@ def render_header():
     title_text = '<h1 style="color: white; margin: 0; font-family:\'Times New Roman\', serif; font-size: 38px; font-weight: bold;">M/S JABED ENTERPRISE</h1>'
     header_content = f'<div style="display: flex; justify-content: center; align-items: center; gap: 12px;">{logo_html}{title_text}</div>' if has_logo else title_text
     st.markdown(f"""
-        st.markdown(f"""
-        <div style="text-align: center; margin-top: -15px; margin-bottom: 0px;">
+        <div style="text-align: center; margin-top: -15px; margin-bottom: 2px;">
             {header_content}
-            <p style="color: #a0a0a0; margin: 2px 0 0 0; font-size: 14.5px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>
+            <p style="color: #a0a0a0; margin: 6px 0 0 0; font-size: 14.5px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>
         </div>
-        <hr style="border: 1px solid #10b981; margin-top: 8px; margin-bottom: 12px;">
+        <hr style="border: 1px solid #10b981; margin-top: 15px; margin-bottom: 25px;">
     """, unsafe_allow_html=True)
 
 # ==============================================================================
@@ -671,7 +670,14 @@ elif current_action == "Cash Management":
     # ইন্টারফেসের চেহারা ও ইনপুট বক্সের এলাইনমেন্ট নিখুঁত করার জন্য কাস্টম CSS ইনজেকশন
     st.markdown("""
         <style>
-
+        /* নাম্বার ইনপুটের আপ-ডাউন (+/-) বাটন সম্পূর্ণ হাইড করার সিএসএস */
+        button[data-testid="stNumberInputStepDown"], 
+        button[data-testid="stNumberInputStepUp"] {
+            display: none !important;
+        }
+        div[data-testid="stNumberInput"] input {
+            padding-right: 10px !important;
+        }
         /* ইনপুট বক্সগুলোর মাঝখানের অতিরিক্ত ফাঁকা জায়গা (Padding) কমানো */
         div[data-testid="element-container"] {
             margin-bottom: 5px !important;
@@ -720,8 +726,6 @@ elif current_action == "Cash Management":
     if "num_rows_in" not in st.session_state: st.session_state.num_rows_in = 15
     if "num_rows_out" not in st.session_state: st.session_state.num_rows_out = 15
 
-    # ক্যাশ ম্যানেজমেন্টের দুটি মূল ট্যাব বিভাজন
-    tab1, tab2 = st.tabs(["📝 Daily Cash Khata", "📖 View Cash Khata Report"])
     # ক্যাশ ম্যানেজমেন্টের দুটি মূল ট্যাব বিভাজন
     tab1, tab2 = st.tabs(["📝 Daily Cash Khata", "📖 View Cash Khata Report"])
 
