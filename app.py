@@ -96,34 +96,13 @@ GUAR_NID_DIR = os.path.join(BASE_DIR, "guarantor_nids")
 # ৩. ডাটাবেজ এবং অ্যাডভান্সড মাইগ্রেশন লজিক (সম্পূর্ণ নতুন এবং ফিক্সড কোড)
 # ==============================================================================
 def init_db():
+    for folder in [UPLOAD_DIR, IMAGE_DIR, PHOTO_DIR, EMP_NID_DIR, GUAR_PHOTO_DIR, GUAR_NID_DIR]:
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # এমপ্লয়ি টেবিল তৈরি করার কুয়েরি
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS employees (
-            emp_id TEXT PRIMARY KEY,
-            name TEXT,
-            designation TEXT,
-            mobile TEXT,
-            alt_contact TEXT,
-            join_date TEXT,
-            basic_salary REAL,
-            variable_salary REAL,
-            total_salary REAL,
-            company TEXT,
-            father_name TEXT,
-            father_nid TEXT,
-            mother_name TEXT,
-            emp_nid TEXT,
-            guarantor_name TEXT,
-            guarantor_nid TEXT,
-            guarantor_mobile TEXT
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS employees (
             emp_id TEXT PRIMARY KEY, name TEXT NOT NULL, designation TEXT, mobile TEXT, alt_contact TEXT, 
