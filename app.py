@@ -215,7 +215,6 @@ def render_no_image_frame(title):
 # ==============================================================================
 # ৫. হেডার ডিজাইন
 # ==============================================================================
-# কোম্পানির ব্র্যান্ড লোগো এবং নামসহ টপ হেডার রেন্ডার করার ফাংশন
 def render_header():
     logo_html = ""
     has_logo = False
@@ -226,12 +225,15 @@ def render_header():
                 encoded = base64.b64encode(f.read()).decode()
             logo_html = f'<img src="data:image/{ext};base64,{encoded}" style="height:55px; vertical-align: middle;">'
             has_logo = True; break
-    title_text = '<h1 style="color: white; margin: 0; font-family:\'Times New Roman\', serif; font-size: 38px; font-weight: bold;">M/S JABED ENTERPRISE</h1>'
+            
+    # 👑 পরিবর্তন ১: এখানে line-height: 1.1; যুক্ত করা হয়েছে
+    title_text = '<h1 style="color: white; margin: 0; line-height: 1.1; font-family:\'Times New Roman\', serif; font-size: 38px; font-weight: bold;">M/S JABED ENTERPRISE</h1>'
     header_content = f'<div style="display: flex; justify-content: center; align-items: center; gap: 12px;">{logo_html}{title_text}</div>' if has_logo else title_text
+    
     st.markdown(f"""
         <div style="text-align: center; margin-top: -15px; margin-bottom: 2px;">
             {header_content}
-            <p style="color: #a0a0a0; margin: 6px 0 0 0; font-size: 14.5px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>
+            <p style="color: #a0a0a0; margin: -4px 0 0 0; font-size: 14.5px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>
         </div>
         <hr style="border: 1px solid #10b981; margin-top: 15px; margin-bottom: 25px;">
     """, unsafe_allow_html=True)
