@@ -590,7 +590,16 @@ elif current_action == "View All Employee":
     st.markdown(f"### 📋 Employee Directory ({current_company})")
     conn = sqlite3.connect(DB_NAME)
     # নির্দিষ্ট কোম্পানির আন্ডারে থাকা কর্মচারীদের তালিকা ডাটাবেজ থেকে কুয়েরি করা
-    df = pd.read_sql_query("SELECT emp_id as 'ID', name as 'নাম', designation as 'পদবী', mobile as 'মোবাইল', total_salary as 'মোট বেতন (৳)' FROM employees WHERE company=?", conn, params=(current_company,))
+    # আপনার কোডের আগের লাইনগুলোর স্পেস অনুযায়ী এই ব্লকের স্পেস হবে
+    try:
+        df = pd.read_sql_query(
+            "SELECT emp_id as 'ID', name as 'নাম', designation as 'পদবী', mobile as 'মোবাইল', total_salary as 'মোট বেতন (৳)' FROM employees WHERE company=?", 
+            conn, 
+            params=(current_company,)
+        )
+    except Exception as e:
+        st.error(f"🔴 আসল ডেটাবেস এররটি হলো: {e}")
+        st.stop()
     conn.close()
     if df.empty: st.info("কোনো ডাটা পাওয়া যায়নি।")
     else:
