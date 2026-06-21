@@ -433,7 +433,7 @@ if st.sidebar.button("🔒 Logout", use_container_width=True):
     st.session_state.logged_in = False; st.session_state.user_role = None
     st.session_state.current_company = None; st.session_state.current_action = None; st.rerun()
 
-st.sidebar.markdown("<hr style='margin: 8px 0px; border-color: #444;'>", unsafe_allow_html=True)
+st.sidebar.markdown("<hr style='margin: 10px 0px; border-color: #444;'>", unsafe_allow_html=True)
 menu_options_emp = ["Add New Employee", "Add Employee By Upload", "View All Employee"]
 
 # রোল ভিত্তিক মেনু রেন্ডারিং লজিক (বিকাশ ডিপার্টমেন্ট)
@@ -666,14 +666,14 @@ elif current_action == "Cash Management":
         }
         /* ইনপুট বক্সগুলোর মাঝখানের অতিরিক্ত ফাঁকা জায়গা (Padding) কমানো */
         div[data-testid="element-container"] {
-            margin-bottom: 5px !important;
+            margin-bottom: 8px !important;
         }
         div[data-testid="stHorizontalBlock"] {
             gap: 12px !important;
         }
         /* হেডার ও ফোল্ডার টেক্সট স্টাইল */
         .hdr-green {
-            background-color: #0d533f; color: white; padding: 8px 15px;
+            background-color: #0d533f; color: white; padding: 10px 15px;
             border-radius: 4px; font-weight: bold; font-size: 14px; text-align: center;
         }
         .hdr-red {
@@ -700,17 +700,17 @@ elif current_action == "Cash Management":
             line-height: 32px; font-size: 15px; font-weight: bold; text-align: right; color: #00ffaa;
         }
         .meta-hr {
-            border: 0; border-top: 1px solid #333333; margin: 8px 0 !important;
+            border: 0; border-top: 1px solid #333333; margin: 10px 0 !important;
         }
         .table-column-title {
-            color: #888888; font-size: 13px; font-weight: bold; margin-top: 15px; margin-bottom: 5px;
+            color: #888888; font-size: 13px; font-weight: bold; margin-top: 10px; margin-bottom: 5px;
         }
         </style>
     """, unsafe_allow_html=True)
 
     # ডাইনামিক রো সংখ্যা ট্র্যাকিং সেশন স্টেট (ডিফল্ট ১৫ দিয়ে শুরু হবে, এক্সেলে বেশি থাকলে অটো বাড়বে)
-    if "num_rows_in" not in st.session_state: st.session_state.num_rows_in = 15
-    if "num_rows_out" not in st.session_state: st.session_state.num_rows_out = 15
+    if "num_rows_in" not in st.session_state: st.session_state.num_rows_in = 10
+    if "num_rows_out" not in st.session_state: st.session_state.num_rows_out = 10
 
     # ক্যাশ ম্যানেজমেন্টের দুটি মূল ট্যাব বিভাজন
     tab1, tab2 = st.tabs(["📝 Daily Cash Khata", "📖 View Cash Khata Report"])
@@ -746,8 +746,8 @@ elif current_action == "Cash Management":
             
             # ছক সম্পূর্ণ ক্লিয়ার বা খালি করার জন্য রিসেট বাটন লজিক
             if st.button("🧹 ছক সম্পূর্ণ খালি করুন (Reset Form)", key="reset_cash_form_btn"):
-                st.session_state.num_rows_in = 15
-                st.session_state.num_rows_out = 15
+                st.session_state.num_rows_in = 10
+                st.session_state.num_rows_out = 10
                 for i in range(200): # সম্ভাব্য সব রো-এর ভ্যালু ডিফল্ট করা
                     st.session_state[f"c_p_in_{i}"] = ""; st.session_state[f"c_a_in_{i}"] = 0.0; st.session_state[f"c_r_in_{i}"] = ""
                     st.session_state[f"c_p_out_{i}"] = ""; st.session_state[f"c_a_out_{i}"] = 0.0; st.session_state[f"c_r_out_{i}"] = ""
