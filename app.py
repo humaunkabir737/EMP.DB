@@ -20,7 +20,7 @@ st.markdown("""
     <style>
     /* মেইন কন্টেইনারের টপ প্যাডিং কমানো */
     .block-container, .stAppViewBlockContainer {
-        padding-top: 2rem !important; /* ২ ইঞ্চির গ্যাপ কমিয়ে ১.৫ রেম করা হলো */
+        padding-top: 1.5rem !important; /* ২ ইঞ্চির গ্যাপ কমিয়ে ১.৫ রেম করা হলো */
         padding-bottom: 1rem !important;
     }
     /* যদি লগইন স্ক্রিন বা অন্য হেডার থাকে তার মার্জিন জিরো করা */
