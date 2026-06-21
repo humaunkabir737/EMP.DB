@@ -1048,7 +1048,7 @@ elif current_action == "Expense Management":
             num_rows = st.number_input("সারির সংখ্যা (Rows):", min_value=1, max_value=25, value=10, step=1, key="expense_num_rows")
         with top_c3:
             uploaded_exp_file = st.file_uploader("📤 এক্সেল ফাইল ড্রপ করুন (Bulk Import)", type=["xlsx"], key="excel_expense_uploader")
-		with top_c4:
+        with top_c4:
             # বাটনগুলোর সঠিক এলাইনমেন্ট বা পজিশন ঠিক করার জন্য সামান্য ফাঁকা জায়গা তৈরি করা
             st.markdown("<div style='padding-top: 24px;'></div>", unsafe_allow_html=True)
             exp_buffer = io.BytesIO() # মেমোরিতে সাময়িকভাবে এক্সেল ফাইল তৈরি করার জন্য বাফার অবজেক্ট
