@@ -104,6 +104,14 @@ def init_db():
             os.makedirs(folder)
 
     conn = sqlite3.connect(DB_NAME)
+    # 🛠️ ডেটাবেসে total_salary কলামটি না থাকলে তা স্বয়ংক্রিয়ভাবে যোগ করার প্যাচ
+try:
+    cursor = conn.cursor()
+    cursor.execute("ALTER TABLE employees ADD COLUMN total_salary REAL DEFAULT 0.0;")
+    conn.commit()
+except Exception:
+    # কলামটি যদি আগে থেকেই থাকে বা কোনো কারণে এরর আসে তবে তা ইগনোর (Ignore) করবে
+    pass
     cursor = conn.cursor()
     
     cursor.execute('''
