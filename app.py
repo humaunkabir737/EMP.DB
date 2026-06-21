@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# নিখুঁত লে-আউট, ইনপুট বক্সের কমপ্যাক্টনেস এবং প্লাস-মাইনাস বাটন হাইড করার কাস্টম CSS
+# নিখুঁত লে-আউট, ইনপুট বক্সের কমপ্যাক্টনেস এবং প্লাস-মাইনাস বাটন হাইд করার কাস্টম CSS
 st.markdown("""
 <style>
     /* লাইনগুলোর মাঝের অতিরিক্ত ভার্টিকাল ফাঁকা জায়গা কমানো */
@@ -68,13 +68,13 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # দৈনিক ক্যাশ খাতা টেবিল
+    # দৈনিক ক্যাশ খাতা টেবিল (SQLite এর সঠিক AUTOINCREMENT সিনট্যাক্স সহ)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS cash_khata (
-        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         company TEXT,
         entry_date TEXT,
-        type TEXT, -- 'RECEIVE' অথবা 'PAYOUT'
+        type TEXT, 
         party_name TEXT,
         amount REAL,
         remarks TEXT
@@ -83,16 +83,16 @@ def init_db():
     # মাদার ওয়ালেট ও ব্যাংক লেজার টেবিল
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS mw_bank_ledger (
-        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         company TEXT,
         action_date TEXT,
-        action_type TEXT, -- 'Lifting' অথবা 'Refund'
+        action_type TEXT, 
         amount REAL,
         mw_impact REAL,
         bank_impact REAL
     )""")
     
-    # কর্মচারী টেবিল (ইউনিক আইডি সহ)
+    # কর্মচারী টেবিল (App 3.0.Text অনুসারে ৪টি ফটোপ্যাথ সহ সম্পূর্ণ স্কিমা)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS employees (
         emp_id TEXT PRIMARY KEY,
@@ -103,13 +103,15 @@ def init_db():
         father_name TEXT,
         mother_name TEXT,
         emp_photo_path TEXT,
-        nid_photo_path TEXT
+        nid_photo_path TEXT,
+        guarantor_photo_path TEXT,
+        guarantor_nid_path TEXT
     )""")
     
-    # সেকেন্ড পার্টি টেবিল (কোম্পানি ভিত্তিক ইউনিক নাম কনস্ট্রেইন)
+    # সেকেন্ড充 পার্টি টেবিল
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS second_parties (
-        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         company TEXT,
         party_name TEXT,
         phone TEXT,
@@ -120,6 +122,7 @@ def init_db():
     conn.commit()
     conn.close()
 
+# ডাটাবেজ টেবিলগুলো সঠিকভাবে তৈরি বা আপডেট করা
 init_db()
 
 # ==========================================
@@ -129,7 +132,7 @@ if 'prev_company' not in st.session_state: st.session_state.prev_company = None
 if 'prev_action' not in st.session_state: st.session_state.prev_action = None
 if 'user_role' not in st.session_state: st.session_state.user_role = 'User'
 
-# সাইডবার প্যানেল ও সিকিউরড লগইন ভিউ
+# সাইডবার প্যানেল ও সিকিউরд লগইন ভিউ
 st.sidebar.title("M/S JABED ENTERPRISE")
 st.sidebar.subheader("Automated Financial ERP")
 
@@ -181,7 +184,6 @@ if current_action == "📝 Daily Cash Khata":
     with head_col2:
         st.markdown('<div class="hdr-red">PAY OUT (আজকের খরচ/দেনা খাত)</div>', unsafe_allow_html=True)
         
-    # ১৫টি ফিক্সড রো সমান্তরাল গ্রিড তৈরি
     row_count = 15
     cash_in_data = []
     cash_out_data = []
@@ -216,10 +218,10 @@ if current_action == "📝 Daily Cash Khata":
     st.write("---")
     st.subheader("💵 সমাপনী খতিয়ান ও ব্যালেন্স সমন্বয়")
     
-    # 📐 [লাইন অ্যালাইনমেন্ট ফিক্স]: প্রতিটি ডাটা রো-কে মুখোমুখি সাব-গ্রিডে লক করা
     total_in_calc = sum(item[4] for item in cash_in_data)
     total_out_calc = sum(item[4] for item in cash_out_data)
     
+    # 📐 [লাইন অ্যালাইনমেন্ট ফিক্স]: প্রতিটি ডাটা রো-কে মুখোমুখি সাব-গ্রিডে সমান্তরাল লক করা
     # রো ১: Opening Volt Cash বনাম DM DSS Bank Balance
     r1_c1, r1_c2 = st.columns(2)
     with r1_c1:
@@ -241,7 +243,7 @@ if current_action == "📝 Daily Cash Khata":
         cc2.number_input("Closing Volt", value=closing_volt_calc, disabled=True, key="cl_volt", label_visibility="collapsed")
     with r2_c2:
         cc3, cc4 = st.columns([6, 6])
-        cc3.markdown('<div class="aligned-label">📈 Market Advance (মার্কেট অ্যাডভান্স):</div>', unsafe_allow_html=True)
+        cc3.markdown('<div class="aligned-label">👑 Market Advance (মার্কেট অ্যাডভান্স):</div>', unsafe_allow_html=True)
         market_adv = cc4.number_input("Market Advance", min_value=0.0, step=1.0, key="mkt_adv", label_visibility="collapsed")
 
     # রো ৩: Grand Total বনাম Others Due
@@ -295,7 +297,6 @@ elif current_action == "💳 MW and Bank (Contra)":
             
             submit_contra = st.form_submit_button("সংরক্ষণ করুন (Execute Contra)")
             if submit_contra and amount > 0:
-                # ডাবল-এন্ট্রি অ্যাকাউন্টিং অটো-প্রসেস মেকানিজম
                 mw_impact = amount if action_type == "Lifting" else -amount
                 bank_impact = -amount if action_type == "Lifting" else amount
                 
@@ -310,7 +311,6 @@ elif current_action == "💳 MW and Bank (Contra)":
                 st.rerun()
                 
     with status_col:
-        # লাইভ ব্যালেন্স স্ট্যাটাস ক্যালকুলেশন
         conn = get_db_connection()
         balances = conn.execute("""
             SELECT SUM(mw_impact) as total_mw, SUM(bank_impact) as total_bank 
@@ -353,29 +353,21 @@ elif current_action == "📊 ERP Report Viewer":
             params.append(selected_party)
             
         df_report = pd.read_sql_query(query, conn, params=params)
-        
-        # অ্যাকশন রো এবং রোল প্রিভিলেজ কন্ট্রোল
         st.dataframe(df_report, use_container_width=True, hide_index=True)
         
-        # অ্যাডমিন মোড হলে এডিট/ডিলিটের বিশেষ সুযোগ দৃশ্যমান হবে
         if st.session_state.user_role == 'Admin':
             st.warning("⚠️ এডমিন প্যানেল সক্রিয়: ডাটাবেজ মডিফিকেশন মোড সচল আছে।")
-            # এডিট বা ডিলিটের লজিক এখানে সংযুক্ত করা যাবে
             
     elif "Investment Update Report" in report_type:
         st.write("### Live Investment Status Report")
+        baseline = 4700000.00 # ৪৭ লাখ বেসলাইন ক্যাশ ভ্যালু ট্র্যাকার
         
-        # ৪৭ লাখ টাকার বেসলাইন ক্যালকুলেশন ইঞ্জিন
-        baseline = 47000000.00
-        
-        # লাইভ ডাটা সামারি পুল
         mw_bal = conn.execute("SELECT SUM(mw_impact) FROM mw_bank_ledger WHERE company=?", (current_company,)).fetchone()[0] or 0.0
         bank_bal = conn.execute("SELECT SUM(bank_impact) FROM mw_bank_ledger WHERE company=?", (current_company,)).fetchone()[0] or 0.0
         
-        # ফর্মুলা ভিত্তিক ইনভেস্টমেন্ট ভ্যালু জেনারেশন
         total_investment = baseline + mw_bal + bank_bal
         
-        st.info("💡 সূত্র: মোট ইনভেস্টমেন্ট = ৪৭ লাখ (বেসলাইন) + ক্যাশ + ব্যাংক + মাদার ওয়ালেট + (পাওনা - দেনা)")
+        st.info("💡 সূত্র: মোট ইনভেস্টমেন্ট = ৪৭ লাখ (বেসলাইন) + মাদার ওয়ালেট + ব্যাংক অ্যাকাউন্ট নেট স্ট্যাটাস")
         
         inv_data = {
             "কম্পোনেন্ট খতিয়ান বিবরণ": ["Base Investment (মূল বেসলাইন)", "Mother Wallet Net Status", "Bank Account Net Status", "Total Real-time Investment"],
@@ -383,7 +375,6 @@ elif current_action == "📊 ERP Report Viewer":
         }
         st.table(pd.DataFrame(inv_data))
         
-        # Output Support (PDF / Print / Excel export triggers)
         st.write("---")
         st.subheader("📥 Export Automated ERP Output")
         c_p1, c_p2, c_p3 = st.columns(3)
@@ -397,9 +388,8 @@ elif current_action == "📊 ERP Report Viewer":
 # ঘ) কর্মচারী ডিরেক্টরি (Employee Directory & Bulk Upload)
 # ------------------------------------------
 elif current_action == "👥 Employee Directory":
-    st.subheader("কর্মচারী ডাটাবেজ ও বাল্ক এক্সেল ইনপুট")
+    st.subheader("कर्मचारी ডাটাবেজ ও বাল্ক এক্সেল ইনপুট")
     
-    # বাল্ক আপলোডার প্যানেল
     excel_file = st.file_uploader("এক্সেল ফাইল আপলোড করুন (Bulk Upload)", type=["xlsx"])
     if excel_file:
         df_uploaded = pd.read_excel(excel_file)
@@ -438,7 +428,6 @@ elif current_action == "🤝 Second Party Setup":
         if submit_party and p_name:
             conn = get_db_connection()
             try:
-                # 🚨 [ডুপ্লিকেট এরর হ্যান্ডলিং]: একই কোম্পানিতে ডুপ্লিকেট নাম প্রতিরোধ করা
                 conn.execute("""
                     INSERT INTO second_parties (company, party_name, phone, comments)
                     VALUES (?, ?, ?, ?)
