@@ -42,14 +42,12 @@
         # ─── [ধাপ ১] প্রধান হেডার অংশ ───
         main_col1, main_col2 = st.columns(2)
         with main_col1:
-            # 🟢 দুটি আলাদা st.markdown কে এক সাথে যুক্ত করা হয়েছে এবং মার্জিন জিরো করা হয়েছে
             st.markdown("""
                 <div class="hdr-green" style="margin-bottom: 0px !important; padding-bottom: 0px !important;">🛸 CASH RECEIVE (জমা)</div>
                 <div class="folder-lbl" style="margin-top: 2px !important; padding-top: 0px !important;">📁 Opening Cash:</div>
             """, unsafe_allow_html=True)
             
         with main_col2:
-            # 🔴 এখানেও একই পদ্ধতিতে গ্যাপ সর্বনিম্ন করা হয়েছে
             st.markdown("""
                 <div class="hdr-red" style="margin-bottom: 0px !important; padding-bottom: 0px !important;">🛸 PAY OUT</div>
                 <div class="folder-lbl" style="margin-top: 2px !important; padding-top: 0px !important;">📁 Closing Balances:</div>
