@@ -229,6 +229,7 @@ def render_no_image_frame(title):
 # ==============================================================================
 # কোম্পানির ব্র্যান্ড লোগো এবং নামসহ টপ হেডার রেন্ডার করার ফাংশন
 def render_header():
+    # লোগো হ্যান্ডলিং (আগের মতোই থাকবে)
     logo_html = ""
     has_logo = False
     for ext in ["png", "jpg", "jpeg"]:
@@ -236,16 +237,21 @@ def render_header():
         if os.path.exists(logo_path):
             with open(logo_path, "rb") as f:
                 encoded = base64.b64encode(f.read()).decode()
-            logo_html = f'<img src="data:image/{ext};base64,{encoded}" style="height:55px; vertical-align: middle;">'
+            logo_html = f'<img src="data:image/{ext};base64,{encoded}" style="height:50px; vertical-align: middle; margin-right: 10px;">'
             has_logo = True; break
-    title_text = '<h1 style="color: white; margin: 0; font-family:\'Times New Roman\', serif; font-size: 38px; font-weight: bold;">M/S JABED ENTERPRISE</h1>'
-    header_content = f'<div style="display: flex; justify-content: center; align-items: center; gap: 12px;">{logo_html}{title_text}</div>' if has_logo else title_text
+            
+    # টাইটেল ও ঠিকানার জন্য ইনলাইন স্টাইল (খুবই নিরাপদ)
+    title_html = '<h1 style="color: white; margin: 0; font-size: 32px; font-weight: bold;">M/S JABED ENTERPRISE</h1>'
+    address_html = '<p style="color: #a0a0a0; margin-top: 2px; margin-bottom: 0px; font-size: 14px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>'
+    
     st.markdown(f"""
-        <div style="text-align: center; margin-top: -15px; margin-bottom: 2px;">
-            {header_content}
-            <p style="color: #a0a0a0; margin: 6px 0 0 0; font-size: 14.5px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>
+        <div style="text-align: center; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: center; align-items: center;">
+                {logo_html}{title_text if 'title_text' in locals() else title_html}
+            </div>
+            {address_html}
         </div>
-        <hr style="border: 1px solid #10b981; margin-top: 15px; margin-bottom: 25px;">
+        <hr style="border: 0.5px solid #10b981; margin-top: 5px; margin-bottom: 10px;">
     """, unsafe_allow_html=True)
 
 # ==============================================================================
