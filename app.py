@@ -93,9 +93,6 @@ GUAR_PHOTO_DIR = os.path.join(BASE_DIR, "guarantor_photos")
 GUAR_NID_DIR = os.path.join(BASE_DIR, "guarantor_nids")
 
 # ==============================================================================
-# ৩. ডাটাবেজ এবং অ্যাডভান্সড মাইগ্রেশন লজিক
-# ==============================================================================
-# ==============================================================================
 # ৩. ডাটাবেজ এবং অ্যাডভান্সড মাইগ্রেশন লজিক (সম্পূর্ণ নতুন এবং ফিক্সড কোড)
 # ==============================================================================
 def init_db():
@@ -157,7 +154,19 @@ def init_db():
     
     cursor.execute("PRAGMA table_info(employees)")
     existing_columns = [col[1] for col in cursor.fetchall()]
-    required_cols = {'company': "TEXT DEFAULT 'bKash'", 'father_name': "TEXT", 'father_nid': "TEXT", 'mother_name': "TEXT", 'emp_nid': "TEXT", 'guarantor_name': "TEXT", 'guarantor_nid': "TEXT", 'guarantor_mobile': "TEXT"}
+    required_cols = {
+        'company': "TEXT DEFAULT 'bKash'", 
+        'father_name': "TEXT", 
+        'father_nid': "TEXT", 
+        'mother_name': "TEXT", 
+        'emp_nid': "TEXT", 
+        'guarantor_name': "TEXT", 
+        'guarantor_nid': "TEXT", 
+        'guarantor_mobile': "TEXT",
+        'basic_salary': "REAL DEFAULT 0.0",
+        'variable_salary': "REAL DEFAULT 0.0",
+        'total_salary': "REAL DEFAULT 0.0"
+    }
     for col_name, col_type in required_cols.items():
         if col_name not in existing_columns:
             cursor.execute(f"ALTER TABLE employees ADD COLUMN {col_name} {col_type}")
