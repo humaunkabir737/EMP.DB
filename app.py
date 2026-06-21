@@ -907,10 +907,10 @@ elif current_action == "Cash Management":
         main_col1, main_col2 = st.columns(2)
         with main_col1:
             st.markdown('<div class="hdr-green">🛸 CASH RECEIVE (জমা)</div>', unsafe_allow_html=True)
-            st.markdown('<div class="folder-lbl" style="margin-bottom:0px;">📁 Opening Cash (অটোমেটিক পূর্বের ব্যালেন্স):</div>', unsafe_allow_html=True)
+            st.markdown('<div class="folder-lbl" style="margin-bottom:2px;">📁 Opening Cash (অটোমেটিক পূর্বের ব্যালেন্স):</div>', unsafe_allow_html=True)
         with main_col2:
             st.markdown('<div class="hdr-red">🛸 PAY OUT (খরচ/প্রদান)</div>', unsafe_allow_html=True)
-            st.markdown('<div class="folder-lbl" style="margin-bottom:0px;">📁 Closing Balances (ম্যানুয়াল এন্ট্রি):</div>', unsafe_allow_html=True)
+            st.markdown('<div class="folder-lbl" style="margin-bottom:2px;">📁 Closing Balances (ম্যানুয়াল এন্ট্রি):</div>', unsafe_allow_html=True)
 
         # ─── [ধাপ ২] রো ১: Vault Cash এলাইনমেন্ট লক ───
         row1_col1, row1_col2 = st.columns(2)
