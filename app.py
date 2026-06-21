@@ -17,7 +17,7 @@ st.markdown("""
     <style>
     /* মেইন কন্টেইনারের টপ প্যাডিং কমানো */
     .block-container, .stAppViewBlockContainer {
-        padding-top: 4rem !important; /* ২ ইঞ্চির গ্যাপ কমিয়ে ১.৫ রেম করা হলো */
+        padding-top: 4rem !important; /* ২ ইঞ্চির গ্যাপ কমিয়ে 4 রেম করা হলো */
         padding-bottom: 1rem !important;
     }
     /* যদি লগইন স্ক্রিন বা অন্য হেডার থাকে তার মার্জিন জিরো করা */
@@ -92,9 +92,7 @@ EMP_NID_DIR = os.path.join(BASE_DIR, "nid_photos")
 GUAR_PHOTO_DIR = os.path.join(BASE_DIR, "guarantor_photos")
 GUAR_NID_DIR = os.path.join(BASE_DIR, "guarantor_nids")
 
-# ==============================================================================
-# ৩. ডাটাবেজ এবং অ্যাডভান্সড মাইগ্রেশন লজিক
-# ==============================================================================
+
 # ==============================================================================
 # ৩. ডাটাবেজ এবং অ্যাডভান্সড মাইগ্রেশন লজিক (সম্পূর্ণ নতুন এবং ফিক্সড কোড)
 # ==============================================================================
@@ -435,7 +433,7 @@ if st.sidebar.button("🔒 Logout", use_container_width=True):
     st.session_state.logged_in = False; st.session_state.user_role = None
     st.session_state.current_company = None; st.session_state.current_action = None; st.rerun()
 
-st.sidebar.markdown("<hr style='margin: 10px 0px; border-color: #444;'>", unsafe_allow_html=True)
+st.sidebar.markdown("<hr style='margin: 8px 0px; border-color: #444;'>", unsafe_allow_html=True)
 menu_options_emp = ["Add New Employee", "Add Employee By Upload", "View All Employee"]
 
 # রোল ভিত্তিক মেনু রেন্ডারিং লজিক (বিকাশ ডিপার্টমেন্ট)
