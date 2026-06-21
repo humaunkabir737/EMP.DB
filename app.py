@@ -55,7 +55,7 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS employees (
             emp_id TEXT PRIMARY KEY,
-            name TEXT NOT EXISTS,
+            name TEXT,
             designation TEXT,
             mobile TEXT,
             company TEXT,
