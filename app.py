@@ -688,6 +688,8 @@ elif current_action == "Cash Management":
         }
         </style>
     """, unsafe_allow_html=True)
+        </style>
+    """, unsafe_allow_html=True)
         /* হেডার ও ফোল্ডার টেক্সট স্টাইল */
         .hdr-green {
             background-color: #0d533f; color: white; padding: 8px 15px;
