@@ -12,21 +12,6 @@ from PIL import Image        # ইমেজ ফাইল প্রসেস এ�
 
 # স্ট্রিমলিট অ্যাপের টাইটেল, লেআউট এবং সাইডবারের ডিফল্ট অবস্থা সেট করা
 st.set_page_config(page_title="M/S Jabed Enterprise", layout="wide", initial_sidebar_state="expanded")
-# 🟢 ওপুরের ২ ইঞ্চি ফাঁকা জায়গা (Top Padding) দূর করার জন্য কাস্টম CSS
-st.markdown("""
-    <style>
-    /* মেইন কন্টেইনারের টপ প্যাডিং কমানো */
-    .block-container, .stAppViewBlockContainer {
-        padding-top: 4rem !important; /* ২ ইঞ্চির গ্যাপ কমিয়ে 4 রেম করা হলো */
-        padding-bottom: 1rem !important;
-    }
-    /* যদি লগইন স্ক্রিন বা অন্য হেডার থাকে তার মার্জিন জিরো করা */
-    .stMainHeader {
-        background-color: transparent !important;
-        height: 0px !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
 
 # ==============================================================================
 # লগইন সিস্টেম (সুরক্ষার জন্য রোল-বেসড অ্যাক্সেসসহ)
@@ -92,7 +77,9 @@ EMP_NID_DIR = os.path.join(BASE_DIR, "nid_photos")
 GUAR_PHOTO_DIR = os.path.join(BASE_DIR, "guarantor_photos")
 GUAR_NID_DIR = os.path.join(BASE_DIR, "guarantor_nids")
 
-
+# ==============================================================================
+# ৩. ডাটাবেজ এবং অ্যাডভান্সড মাইগ্রেশন লজিক
+# ==============================================================================
 # ==============================================================================
 # ৩. ডাটাবেজ এবং অ্যাডভান্সড মাইগ্রেশন লজিক (সম্পূর্ণ নতুন এবং ফিক্সড কোড)
 # ==============================================================================
@@ -213,6 +200,7 @@ def render_no_image_frame(title):
 # ==============================================================================
 # ৫. হেডার ডিজাইন
 # ==============================================================================
+# কোম্পানির ব্র্যান্ড লোগো এবং নামসহ টপ হেডার রেন্ডার করার ফাংশন
 def render_header():
     logo_html = ""
     has_logo = False
@@ -223,17 +211,14 @@ def render_header():
                 encoded = base64.b64encode(f.read()).decode()
             logo_html = f'<img src="data:image/{ext};base64,{encoded}" style="height:55px; vertical-align: middle;">'
             has_logo = True; break
-            
-    # 👑 পরিবর্তন ১: এখানে line-height: 1.1; যুক্ত করা হয়েছে
-    title_text = '<h1 style="color: white; margin: 0; line-height: 1.1; font-family:\'Times New Roman\', serif; font-size: 38px; font-weight: bold;">M/S JABED ENTERPRISE</h1>'
+    title_text = '<h1 style="color: white; margin: 0; font-family:\'Times New Roman\', serif; font-size: 38px; font-weight: bold;">M/S JABED ENTERPRISE</h1>'
     header_content = f'<div style="display: flex; justify-content: center; align-items: center; gap: 12px;">{logo_html}{title_text}</div>' if has_logo else title_text
-    
     st.markdown(f"""
-        <div style="text-align: center; margin-top: -10px; margin-bottom: 0.5px;">
+        <div style="text-align: center; margin-top: -15px; margin-bottom: 2px;">
             {header_content}
-            <p style="color: #a0a0a0; margin: -15px 0 0 0; font-size: 14.5px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>
+            <p style="color: #a0a0a0; margin: 6px 0 0 0; font-size: 14.5px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>
         </div>
-        <hr style="border: 1px solid #10b981; margin-top: 2px; margin-bottom: 0px;">
+        <hr style="border: 1px solid #10b981; margin-top: 15px; margin-bottom: 25px;">
     """, unsafe_allow_html=True)
 
 # ==============================================================================
@@ -666,14 +651,14 @@ elif current_action == "Cash Management":
         }
         /* ইনপুট বক্সগুলোর মাঝখানের অতিরিক্ত ফাঁকা জায়গা (Padding) কমানো */
         div[data-testid="element-container"] {
-            margin-bottom: 8px !important;
+            margin-bottom: 5px !important;
         }
         div[data-testid="stHorizontalBlock"] {
             gap: 12px !important;
         }
         /* হেডার ও ফোল্ডার টেক্সট স্টাইল */
         .hdr-green {
-            background-color: #0d533f; color: white; padding: 10px 15px;
+            background-color: #0d533f; color: white; padding: 8px 15px;
             border-radius: 4px; font-weight: bold; font-size: 14px; text-align: center;
         }
         .hdr-red {
@@ -700,17 +685,17 @@ elif current_action == "Cash Management":
             line-height: 32px; font-size: 15px; font-weight: bold; text-align: right; color: #00ffaa;
         }
         .meta-hr {
-            border: 0; border-top: 1px solid #333333; margin: 10px 0 !important;
+            border: 0; border-top: 1px solid #333333; margin: 8px 0 !important;
         }
         .table-column-title {
-            color: #888888; font-size: 13px; font-weight: bold; margin-top: 10px; margin-bottom: 5px;
+            color: #888888; font-size: 13px; font-weight: bold; margin-top: 15px; margin-bottom: 5px;
         }
         </style>
     """, unsafe_allow_html=True)
 
     # ডাইনামিক রো সংখ্যা ট্র্যাকিং সেশন স্টেট (ডিফল্ট ১৫ দিয়ে শুরু হবে, এক্সেলে বেশি থাকলে অটো বাড়বে)
-    if "num_rows_in" not in st.session_state: st.session_state.num_rows_in = 10
-    if "num_rows_out" not in st.session_state: st.session_state.num_rows_out = 10
+    if "num_rows_in" not in st.session_state: st.session_state.num_rows_in = 15
+    if "num_rows_out" not in st.session_state: st.session_state.num_rows_out = 15
 
     # ক্যাশ ম্যানেজমেন্টের দুটি মূল ট্যাব বিভাজন
     tab1, tab2 = st.tabs(["📝 Daily Cash Khata", "📖 View Cash Khata Report"])
@@ -746,8 +731,8 @@ elif current_action == "Cash Management":
             
             # ছক সম্পূর্ণ ক্লিয়ার বা খালি করার জন্য রিসেট বাটন লজিক
             if st.button("🧹 ছক সম্পূর্ণ খালি করুন (Reset Form)", key="reset_cash_form_btn"):
-                st.session_state.num_rows_in = 10
-                st.session_state.num_rows_out = 10
+                st.session_state.num_rows_in = 15
+                st.session_state.num_rows_out = 15
                 for i in range(200): # সম্ভাব্য সব রো-এর ভ্যালু ডিফল্ট করা
                     st.session_state[f"c_p_in_{i}"] = ""; st.session_state[f"c_a_in_{i}"] = 0.0; st.session_state[f"c_r_in_{i}"] = ""
                     st.session_state[f"c_p_out_{i}"] = ""; st.session_state[f"c_a_out_{i}"] = 0.0; st.session_state[f"c_r_out_{i}"] = ""
@@ -845,70 +830,13 @@ elif current_action == "Cash Management":
         """, unsafe_allow_html=True)
 
         # ─── [ধাপ ১] প্রধান হেডার অংশ (Header Row) ───
-# ==============================================================================
-        # 🟩 এজেন্ডা ১: প্রতিটি লাইনের মধ্যবর্তী গ্যাপ (Row-to-Row Gap) সর্বনিম্নকরণ
-        # ==============================================================================
-        st.markdown("""
-        <style>
-        /* 🚨 ১. প্রতিটি লাইনের মাঝখানের অতিরিক্ত ডিফল্ট গ্যাপ (১৬px থেকে কমিয়ে ৪px করা) */
-        div[data-testid="stVerticalBlock"] {
-            gap: 0.25rem !important; 
-        }
-        
-        /* ২. হরাইজন্টাল ব্লকের (st.columns) ওপর-নিচের মার্জিন সম্পূর্ণ জিরো করা */
-        div[data-testid="stHorizontalBlock"] {
-            margin-top: 0px !important;
-            margin-bottom: 0px !important;
-            padding-top: 0px !important;
-            padding-bottom: 0px !important;
-        }
-
-        /* ৩. ইনপুট বক্সের ভেতরের টেক্সটের ওপর-নিচের স্পেস সর্বনিম্ন ও উচ্চতা ২৮px এ লক */
-        .stNumberInput input {
-            padding-top: 0px !important;
-            padding-bottom: 0px !important;
-            height: 28px !important; 
-            line-height: 1 !important;
-            font-size: 14px !important;
-        }
-        
-        /* ৪. স্ট্রিমলিটের বেস-ইনপুট কন্টেইনারের হাইট ২৮px করা */
-        .stNumberInput div[data-baseweb="base-input"] {
-            height: 28px !important;
-            min-height: 28px !important;
-        }
-
-        /* ৫. বাম পাশের টেক্সট ও লেবেলের উচ্চতা ২৮px করে ডানের ইনপুট বক্সের সাথে সিঙ্ক করা */
-        .meta-label-vertical, .meta-value-vertical, 
-        .summary-label-vertical, .summary-value-vertical {
-            min-height: 28px !important;
-            height: 28px !important;
-            display: flex;
-            align-items: center; /* ভার্টিক্যালি একদম মাঝখানে থাকবে */
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        .meta-value-vertical, .summary-value-vertical {
-            justify-content: flex-end;
-        }
-        
-        /* ৬. মাঝখানের ডিভাইডার বা অনুভূমিক রেখার বাড়তি গ্যাপ জিরো করা */
-        .meta-hr {
-            margin-top: 2px !important;
-            margin-bottom: 2px !important;
-            border: 0.5px solid #444 !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-
-        # ─── [ধাপ ১] প্রধান হেডার অংশ ───
         main_col1, main_col2 = st.columns(2)
         with main_col1:
             st.markdown('<div class="hdr-green">🛸 CASH RECEIVE (জমা)</div>', unsafe_allow_html=True)
-            st.markdown('<div class="folder-lbl" style="margin-bottom:8px;">📁 Opening Cash (অটোমেটিক পূর্বের ব্যালেন্স):</div>', unsafe_allow_html=True)
+            st.markdown('<div class="folder-lbl">📁 Opening Cash (অটোমেটিক পূর্বের ব্যালেন্স):</div>', unsafe_allow_html=True)
         with main_col2:
             st.markdown('<div class="hdr-red">🛸 PAY OUT (খরচ/প্রদান)</div>', unsafe_allow_html=True)
-            st.markdown('<div class="folder-lbl" style="margin-bottom:8px;">📁 Closing Balances (ম্যানুয়াল এন্ট্রি):</div>', unsafe_allow_html=True)
+            st.markdown('<div class="folder-lbl">📁 Closing Balances (ম্যানুয়াল এন্ট্রি):</div>', unsafe_allow_html=True)
 
         # ─── [ধাপ ২] রো ১: Vault Cash এলাইনমেন্ট লক ───
         row1_col1, row1_col2 = st.columns(2)
@@ -919,7 +847,7 @@ elif current_action == "Cash Management":
         with row1_col2:
             r_r1_c1, r_r1_c2 = st.columns([7, 5])
             r_r1_c1.markdown('<div class="meta-label-vertical">Vault Cash:</div>', unsafe_allow_html=True)
-            placeholder_vault_cash_text = r_r1_c2.empty()
+            placeholder_vault_cash_text = r_r1_c2.empty() # ভল্ট ক্যাশ অটো ক্যালকুলেশনের স্লট
 
         # ─── [ধাপ ৩] রো ২: DM & DSS Bank এলাইনমেন্ট লক ───
         row2_col1, row2_col2 = st.columns(2)
@@ -930,6 +858,7 @@ elif current_action == "Cash Management":
         with row2_col2:
             r_r2_c1, r_r2_c2 = st.columns([7, 5])
             r_r2_c1.markdown('<div class="meta-label-vertical">DM & DSS Bank:</div>', unsafe_allow_html=True)
+            # label_visibility="collapsed" দিয়ে ইনপুটের উপরের ফাঁকা জায়গা রিমুভ করা হয়েছে
             m_bank = r_r2_c2.number_input("", min_value=0.0, step=1.0, key="m_inp_bank", label_visibility="collapsed")
 
         # ─── [ধাপ ৪] রো ৩: Market Advance এলাইনমেন্ট লক ───
@@ -954,14 +883,14 @@ elif current_action == "Cash Management":
             r_r4_c1.markdown('<div class="meta-label-vertical">Others Due:</div>', unsafe_allow_html=True)
             m_due = r_r4_c2.number_input("", min_value=0.0, step=1.0, key="m_inp_due", label_visibility="collapsed")
 
-        # ─── [ধাপ ৬] অনুভূমিক রেখা অংশ (ডিভাইডার) ───
+        # ─── [ধাপ ৬] অনুভূমিক রেখা অংশ (Horizontal Separator Row) ───
         hr_col1, hr_col2 = st.columns(2)
         with hr_col1:
             st.markdown('<hr class="meta-hr">', unsafe_allow_html=True)
         with hr_col2:
             st.markdown('<hr class="meta-hr">', unsafe_allow_html=True)
 
-        # ─── [ধাপ ৭] রো ৫: Total Opening & Closing Cash ───
+        # ─── [ধাপ ৭] রো ৫: Total Opening & Closing Cash এলাইনমেন্ট লক ───
         row5_col1, row5_col2 = st.columns(2)
         with row5_col1:
             l_r5_c1, l_r5_c2 = st.columns([7, 5])
@@ -970,14 +899,14 @@ elif current_action == "Cash Management":
         with row5_col2:
             r_r5_c1, r_r5_c2 = st.columns([7, 5])
             r_r5_c1.markdown('<div class="summary-label-vertical" style="color:#ff5555; font-weight:bold;">Total Closing Cash:</div>', unsafe_allow_html=True)
-            placeholder_total_closing_text = r_r5_c2.empty()
+            placeholder_total_closing_text = r_r5_c2.empty() # মোট ক্লোজিং যোগফলের লাইভ স্লট
 
         # ─── [ধাপ ৮] রো ৬: লাইভ গ্র্যান্ড টোটাল প্লেসহোল্ডার স্লট ───
         row6_col1, row6_col2 = st.columns(2)
         with row6_col1:
-            placeholder_left_summary = st.empty()
+            placeholder_left_summary = st.empty() # নিচের লাইভ গ্র্যান্ড টোটাল জমার জন্য ফাকা স্লট
         with row6_col2:
-            placeholder_right_summary = st.empty()
+            placeholder_right_summary = st.empty() # নিচের লাইভ গ্র্যান্ড টোটাল খরচের জন্য ফাকা স্লট
         # 📊 ডাটা এন্ট্রি গ্রিড প্যানেল (লুপ ভিত্তিক ফর্ম কন্ট্রোল)
         st.markdown("<br>", unsafe_allow_html=True)
         grid_col1, grid_col2 = st.columns(2)
