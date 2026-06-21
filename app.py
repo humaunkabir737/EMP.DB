@@ -233,7 +233,7 @@ def render_header():
     st.markdown(f"""
         <div style="text-align: center; margin-top: -10px; margin-bottom: 0.5px;">
             {header_content}
-            <p style="color: #a0a0a0; margin: -25px 0 0 0; font-size: 14.5px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>
+            <p style="color: #a0a0a0; margin: -15px 0 0 0; font-size: 14.5px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>
         </div>
         <hr style="border: 1px solid #10b981; margin-top: 0px; margin-bottom: 0px;">
     """, unsafe_allow_html=True)
