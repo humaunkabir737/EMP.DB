@@ -235,7 +235,7 @@ def render_header():
             {header_content}
             <p style="color: #a0a0a0; margin: -8px 0 0 0; font-size: 14.5px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>
         </div>
-        <hr style="border: 1px solid #10b981; margin-top: -15px; margin-bottom: -10px;">
+        <hr style="border: 1px solid #10b981; margin-top: 0px; margin-bottom: 0px;">
     """, unsafe_allow_html=True)
 
 # ==============================================================================
