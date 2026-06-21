@@ -241,8 +241,8 @@ def render_header():
             has_logo = True; break
             
     # টাইটেল ও ঠিকানার জন্য ইনলাইন স্টাইল (খুবই নিরাপদ)
-    title_html = '<h1 style="color: white; margin: 0; font-size: 32px; font-weight: bold;">M/S JABED ENTERPRISE</h1>'
-    address_html = '<p style="color: #a0a0a0; margin-top: 2px; margin-bottom: 0px; font-size: 14px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>'
+    title_html = '<h1 style="color: white; margin: 0; margin-bottom: 0px; font-size: 40px; font-weight: bold;">M/S JABED ENTERPRISE</h1>'
+    address_html = '<p style="color: #a0a0a0; margin-top: 1px; margin-bottom: 0px; font-size: 11px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>'
     
     st.markdown(f"""
         <div style="text-align: center; margin-bottom: 10px;">
