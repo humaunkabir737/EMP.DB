@@ -689,19 +689,19 @@ elif current_action == "Cash Management":
         }
         /* ইনপুট বক্সগুলোর মাঝখানের অতিরিক্ত ফাঁকা জায়গা (Padding) কমানো */
         div[data-testid="element-container"] {
-            margin-bottom: 5px !important;
+            margin-bottom: 2.5px !important;
         }
         div[data-testid="stHorizontalBlock"] {
-            gap: 12px !important;
+            gap: 10px !important;
         }
         /* হেডার ও ফোল্ডার টেক্সট স্টাইল */
         .hdr-green {
-            background-color: #0d533f; color: white; padding: 8px 15px;
-            border-radius: 4px; font-weight: bold; font-size: 14px; text-align: center;
+            background-color: #0d533f; color: white; padding: 6px 15px;
+            border-radius: 0px; font-weight: bold; font-size: 14px; text-align: center;
         }
         .hdr-red {
             background-color: #7a1c1c; color: white; padding: 8px 15px;
-            border-radius: 4px; font-weight: bold; font-size: 14px; text-align: center;
+            border-radius: 0px; font-weight: bold; font-size: 14px; text-align: center;
         }
         .folder-lbl {
             color: #f39c12; font-weight: bold; font-size: 14px; margin-top: 10px; margin-bottom: 10px;
