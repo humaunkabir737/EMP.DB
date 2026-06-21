@@ -708,9 +708,9 @@ elif current_action == "Cash Management":
         </style>
     """, unsafe_allow_html=True)
 
-    # ডাইনামিক রো সংখ্যা ট্র্যাকিং সেশন স্টেট (ডিফল্ট ১৫ দিয়ে শুরু হবে, এক্সেলে বেশি থাকলে অটো বাড়বে)
-    if "num_rows_in" not in st.session_state: st.session_state.num_rows_in = 15
-    if "num_rows_out" not in st.session_state: st.session_state.num_rows_out = 15
+    # ডাইনামিক রো সংখ্যা ট্র্যাকিং সেশন স্টেট (ডিফল্ট ১০ দিয়ে শুরু হবে, এক্সেলে বেশি থাকলে অটো বাড়বে)
+    if "num_rows_in" not in st.session_state: st.session_state.num_rows_in = 10
+    if "num_rows_out" not in st.session_state: st.session_state.num_rows_out = 10
 
     # ক্যাশ ম্যানেজমেন্টের দুটি মূল ট্যাব বিভাজন
     tab1, tab2 = st.tabs(["📝 Daily Cash Khata", "📖 View Cash Khata Report"])
@@ -746,8 +746,8 @@ elif current_action == "Cash Management":
             
             # ছক সম্পূর্ণ ক্লিয়ার বা খালি করার জন্য রিসেট বাটন লজিক
             if st.button("🧹 ছক সম্পূর্ণ খালি করুন (Reset Form)", key="reset_cash_form_btn"):
-                st.session_state.num_rows_in = 15
-                st.session_state.num_rows_out = 15
+                st.session_state.num_rows_in = 10
+                st.session_state.num_rows_out = 10
                 for i in range(200): # সম্ভাব্য সব রো-এর ভ্যালু ডিফল্ট করা
                     st.session_state[f"c_p_in_{i}"] = ""; st.session_state[f"c_a_in_{i}"] = 0.0; st.session_state[f"c_r_in_{i}"] = ""
                     st.session_state[f"c_p_out_{i}"] = ""; st.session_state[f"c_a_out_{i}"] = 0.0; st.session_state[f"c_r_out_{i}"] = ""
@@ -776,8 +776,8 @@ elif current_action == "Cash Management":
                             df_out = df[df['Type'].astype(str).str.upper().str.strip() == 'PAY OUT']
                             
                             # ২ নং প্রশ্নের সমাধান (অপশন খ): ডাটার পরিমাণের উপর ভিত্তি করে ডাইনামিক রো কাউন্টার ফিক্সড করা
-                            st.session_state.num_rows_in = max(15, len(df_in))
-                            st.session_state.num_rows_out = max(15, len(df_out))
+                            st.session_state.num_rows_in = max(10, len(df_in))
+                            st.session_state.num_rows_out = max(10, len(df_out))
                             
                             # সেশন স্টেটে জমার (RECEIVE) ডাটা পুশ করা
                             for idx, row in enumerate(df_in.to_dict(orient='records')):
