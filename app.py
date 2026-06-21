@@ -80,8 +80,10 @@ GUAR_NID_DIR = os.path.join(BASE_DIR, "guarantor_nids")
 # ==============================================================================
 # ৩. ডাটাবেজ এবং অ্যাডভান্সড মাইগ্রেশন লজিক
 # ==============================================================================
+# ==============================================================================
+# ৩. ডাটাবেজ এবং অ্যাডভান্সড মাইগ্রেশন লজিক (সম্পূর্ণ নতুন এবং ফিক্সড কোড)
+# ==============================================================================
 def init_db():
-    # কোনো ফোল্ডার তৈরি করা না থাকলে তা স্বয়ংক্রিয়ভাবে তৈরি করা
     for folder in [UPLOAD_DIR, IMAGE_DIR, PHOTO_DIR, EMP_NID_DIR, GUAR_PHOTO_DIR, GUAR_NID_DIR]:
         if not os.path.exists(folder):
             os.makedirs(folder)
@@ -89,17 +91,15 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # কর্মচারীদের তথ্য সংরক্ষণের জন্য টেবিল তৈরি (যদি না থাকে)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS employees (
-            emp_id TEXT PRIMARY KEY, name TEXT NOT NULL, designation TEXT, mobile TEXT, alt_contact TEXT, join_date TEXT,
+            emp_id TEXT PRIMARY KEY, name TEXT NOT NULL, designation TEXT, mobile TEXT, alt_contact TEXT, 
+            join_date TEXT,
             basic_salary REAL, variable_salary REAL, total_salary REAL, company TEXT NOT NULL, father_name TEXT,
             father_nid TEXT, mother_name TEXT, emp_nid TEXT, guarantor_name TEXT, guarantor_nid TEXT, guarantor_mobile TEXT
         )
     ''')
     
-    # সেকেন্ড পার্টি টেবিল স্কিমা এবং কলাম মাইগ্রেশন চেক ও আপডেট লজিক
-    #  এই নতুন কোডটুকু এখানে পেস্ট করুন:
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='second_parties'")
     if cursor.fetchone():
         cursor.execute("PRAGMA table_info(second_parties)")
@@ -129,27 +129,17 @@ def init_db():
                 UNIQUE(company, party_name)
             )
         ''')
-    else:
-        cursor.execute('''
-            CREATE TABLE second_parties (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, company TEXT NOT NULL, party_name TEXT NOT NULL, 
-                contact_number TEXT, comments_01 TEXT, comments_02 TEXT, status TEXT DEFAULT 'Active', UNIQUE(company, party_name)
-            )
-        ''')
     
-    # ডিফল্ট সেকেন্ড পার্টিগুলোর নাম ডাটাবেজে অটো-ইন্সার্ট করা
     default_parties = ["Mother_Wallet", "Hand_Cash", "Petty_Cash", "Bank", "BGP", "Dulal", "Shafayat", "Madina", "Owner", "GAS", "Auto_Rice", "Others", "bKash", "Commission", "Al_Arafa", "Rekit", "DMCBL", "Kabita_Mami", "Ashim_Da", "Al_Amin"]
     for party in default_parties:
         cursor.execute("INSERT OR IGNORE INTO second_parties (company, party_name, contact_number, comments_01, comments_02, status) VALUES ('bKash', ?, '', '', '', 'Active')", (party,))
     
-    # ক্যাশ ট্রানজেকশন সংরক্ষণের টেবিল তৈরি
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS cash_transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, company TEXT NOT NULL, second_party TEXT NOT NULL, type TEXT NOT NULL, amount REAL NOT NULL, remarks TEXT
         )
     ''')
     
-    # কর্মচারী টেবিলের কলাম আপডেট চেক (পুরনো ভার্সন থেকে নতুন ভার্সনে মাইগ্রেশন)
     cursor.execute("PRAGMA table_info(employees)")
     existing_columns = [col[1] for col in cursor.fetchall()]
     required_cols = {'company': "TEXT DEFAULT 'bKash'", 'father_name': "TEXT", 'father_nid': "TEXT", 'mother_name': "TEXT", 'emp_nid': "TEXT", 'guarantor_name': "TEXT", 'guarantor_nid': "TEXT", 'guarantor_mobile': "TEXT"}
@@ -159,7 +149,7 @@ def init_db():
             
     conn.commit(); conn.close()
 
-init_db() # ডাটাবেজ ফাংশনটি রান করা
+init_db()
 
 # ==============================================================================
 # ৪. গ্লোবাল সেশন স্টেট এবং হেল্পার ফাংশন
