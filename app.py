@@ -663,7 +663,7 @@ elif current_action == "Cash Management":
         }
         /* ইনপুট বক্সগুলোর মাঝখানের অতিরিক্ত ফাঁকা জায়গা (Padding) কমানো */
         div[data-testid="element-container"] {
-            margin-bottom: 5px !important;
+            margin-bottom: 2px !important;
         }
         div[data-testid="stHorizontalBlock"] {
             gap: 12px !important;
