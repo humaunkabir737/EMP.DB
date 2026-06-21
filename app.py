@@ -231,11 +231,11 @@ def render_header():
     header_content = f'<div style="display: flex; justify-content: center; align-items: center; gap: 12px;">{logo_html}{title_text}</div>' if has_logo else title_text
     
     st.markdown(f"""
-        <div style="text-align: center; margin-top: -15px; margin-bottom: 2px;">
+        <div style="text-align: center; margin-top: -20px; margin-bottom: 1px;">
             {header_content}
-            <p style="color: #a0a0a0; margin: -4px 0 0 0; font-size: 14.5px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>
+            <p style="color: #a0a0a0; margin: -8px 0 0 0; font-size: 14.5px;">394 Anima Plaza, Nagerbazar, Bagerhat Sadar, Bagerhat.</p>
         </div>
-        <hr style="border: 1px solid #10b981; margin-top: 15px; margin-bottom: 25px;">
+        <hr style="border: 1px solid #10b981; margin-top: -15px; margin-bottom: -10px;">
     """, unsafe_allow_html=True)
 
 # ==============================================================================
